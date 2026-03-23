@@ -100,121 +100,148 @@
   }
 
   /* ════════════════════════════════════════════
-     2. PARTICLE NETWORK (Hero background)
+     2. LIVE MONITORING PANEL
   ════════════════════════════════════════════ */
-  function initParticles() {
-    const canvas = document.getElementById('hero-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let W, H, particles = [], raf;
+  function initMonitorPanel() {
+    const panel = document.querySelector('.monitor-panel');
+    if (!panel) return;
 
-    const CONFIG = {
-      count: 55,
-      speed: 0.35,
-      radius: 2.2,
-      connectDist: 140,
-      color: '0, 87, 255',
-      dotAlpha: 0.18,
-      lineAlpha: 0.07,
-    };
-
-    function resize() {
-      W = canvas.width = canvas.offsetWidth;
-      H = canvas.height = canvas.offsetHeight;
+    /* ── Clock ── */
+    const clockEl = document.getElementById('monitor-clock');
+    function tickClock() {
+      if (!clockEl) return;
+      const n = new Date();
+      clockEl.textContent = [n.getHours(), n.getMinutes(), n.getSeconds()]
+        .map((v) => String(v).padStart(2, '0')).join(':');
     }
+    tickClock();
+    setInterval(tickClock, 1000);
 
-    function createParticle() {
-      return {
-        x: Math.random() * W,
-        y: Math.random() * H,
-        vx: (Math.random() - 0.5) * CONFIG.speed,
-        vy: (Math.random() - 0.5) * CONFIG.speed,
-        r: CONFIG.radius + Math.random() * 1.2,
-      };
-    }
-
-    function init() {
-      resize();
-      particles = Array.from({ length: CONFIG.count }, createParticle);
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-
-      // Update + wrap
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < -10) p.x = W + 10;
-        if (p.x > W + 10) p.x = -10;
-        if (p.y < -10) p.y = H + 10;
-        if (p.y > H + 10) p.y = -10;
+    /* ── Pulse graph ── */
+    const canvas = document.getElementById('monitor-graph');
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      const BUF = 120;
+      // Seed with realistic-looking traffic (mostly 20–40%, occasional spikes)
+      const data = Array.from({ length: BUF }, (_, i) => {
+        const base = 22 + Math.sin(i * 0.18) * 8;
+        const noise = (Math.random() - 0.5) * 10;
+        const spike = Math.random() < 0.06 ? Math.random() * 45 : 0;
+        return Math.max(5, Math.min(95, base + noise + spike));
       });
 
-      // Draw connections
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < CONFIG.connectDist) {
-            const alpha = CONFIG.lineAlpha * (1 - dist / CONFIG.connectDist);
-            ctx.beginPath();
-            ctx.strokeStyle = `rgba(${CONFIG.color}, ${alpha})`;
-            ctx.lineWidth = 1;
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
+      function resizeCanvas() {
+        canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+        canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      }
+      resizeCanvas();
+
+      function drawGraph() {
+        const W = canvas.offsetWidth;
+        const H = canvas.offsetHeight;
+        ctx.clearRect(0, 0, W, H);
+
+        // Grid lines
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        [0.25, 0.5, 0.75].forEach((f) => {
+          ctx.beginPath();
+          ctx.moveTo(0, H * f);
+          ctx.lineTo(W, H * f);
+          ctx.stroke();
+        });
+
+        // Build path
+        const step = W / (BUF - 1);
+        ctx.beginPath();
+        data.forEach((v, i) => {
+          const x = i * step;
+          const y = H - (v / 100) * H * 0.9 - H * 0.05;
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        });
+
+        // Stroke
+        ctx.strokeStyle = '#0057ff';
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+
+        // Fill gradient below line
+        const grad = ctx.createLinearGradient(0, 0, 0, H);
+        grad.addColorStop(0, 'rgba(0,87,255,0.2)');
+        grad.addColorStop(1, 'rgba(0,87,255,0)');
+        ctx.lineTo(W, H);
+        ctx.lineTo(0, H);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
       }
 
-      // Draw dots
-      particles.forEach((p) => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${CONFIG.color}, ${CONFIG.dotAlpha})`;
-        ctx.fill();
-      });
-
-      raf = requestAnimationFrame(draw);
+      // Advance data every 300ms (feels live)
+      function advanceData() {
+        const last = data[data.length - 1];
+        const drift = (Math.random() - 0.5) * 12;
+        const spike = Math.random() < 0.04 ? Math.random() * 50 : 0;
+        data.push(Math.max(5, Math.min(95, last + drift + spike)));
+        data.shift();
+        drawGraph();
+      }
+      drawGraph();
+      setInterval(advanceData, 280);
+      window.addEventListener('resize', () => { resizeCanvas(); drawGraph(); }, { passive: true });
     }
 
-    // Pause when off-screen for performance
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting) { if (!raf) raf = requestAnimationFrame(draw); }
-        else { cancelAnimationFrame(raf); raf = null; }
-      });
-    });
-    observer.observe(canvas);
+    /* ── Log stream ── */
+    const logsEl = document.getElementById('monitor-logs');
+    const LOG_POOL = [
+      ['OK',   'Network check: all 500 nodes responsive'],
+      ['OK',   'Backup completed — 142 GB synced to cloud'],
+      ['INFO', 'VPN session opened: James.T@client.co.uk'],
+      ['OK',   'Patch MS25-0291 applied to 24 endpoints'],
+      ['INFO', 'Helpdesk ticket #4821 resolved in 18 min'],
+      ['OK',   'Security scan: 0 threats detected'],
+      ['INFO', 'M365 licence audit — 0 anomalies'],
+      ['OK',   'Firewall rule updated across 12 devices'],
+      ['INFO', 'Scheduled reboot: SRV-PROD-01 — no impact'],
+      ['OK',   'SSL cert renewal: 90 days remaining'],
+      ['INFO', '2FA enrolled: 3 new users onboarded'],
+      ['OK',   'DNS check: all records healthy'],
+      ['INFO', 'Asset scan: 500 devices inventoried'],
+      ['OK',   'EDR signature update pushed to all endpoints'],
+      ['INFO', 'Email filter: 148 spam messages quarantined'],
+    ];
+    let logIdx = 0;
 
-    window.addEventListener('resize', () => {
-      resize();
-      particles = Array.from({ length: CONFIG.count }, createParticle);
-    }, { passive: true });
+    function addLog() {
+      if (!logsEl) return;
+      const [type, msg] = LOG_POOL[logIdx % LOG_POOL.length];
+      logIdx++;
+      const now = new Date();
+      const ts = [now.getHours(), now.getMinutes(), now.getSeconds()]
+        .map((v) => String(v).padStart(2, '0')).join(':');
+      const cls = type === 'OK' ? 'mlog-ok' : type === 'WARN' ? 'mlog-warn' : 'mlog-info';
+      const line = document.createElement('div');
+      line.className = 'mlog';
+      line.innerHTML = `<span class="${cls}">[${type}]</span> ${ts} ${msg}`;
+      logsEl.prepend(line);
+      // Keep max 4 lines
+      while (logsEl.children.length > 4) logsEl.lastElementChild.remove();
+    }
+    // Stagger first few additions
+    setTimeout(addLog, 1800);
+    setTimeout(addLog, 3400);
+    setInterval(addLog, 4500);
 
-    // Mouse interaction — attract nearby particles
-    canvas.addEventListener('mousemove', (e) => {
-      const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      particles.forEach((p) => {
-        const dx = mx - p.x;
-        const dy = my - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 100) {
-          p.vx += dx * 0.0002;
-          p.vy += dy * 0.0002;
-          // clamp speed
-          const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-          if (spd > 1.5) { p.vx = (p.vx / spd) * 1.5; p.vy = (p.vy / spd) * 1.5; }
-        }
-      });
-    }, { passive: true });
-
-    init();
-    raf = requestAnimationFrame(draw);
+    /* ── Uptime counter ── */
+    const uptimeEl = document.getElementById('monitor-uptime');
+    if (uptimeEl) {
+      const founded = new Date('2009-01-15');
+      const diff = Date.now() - founded;
+      const yrs = Math.floor(diff / (365.25 * 24 * 3600 * 1000));
+      const mos = Math.floor((diff % (365.25 * 24 * 3600 * 1000)) / (30.44 * 24 * 3600 * 1000));
+      uptimeEl.textContent = `${yrs}y ${mos}m`;
+    }
   }
 
   /* ════════════════════════════════════════════
@@ -527,7 +554,7 @@
 
   /* ── Init all features ── */
   initBootLoader();
-  initParticles();
+  initMonitorPanel();
   initCounters();
   initTerminal();
 

@@ -78,11 +78,10 @@
   </nav>
 
   <!-- HERO -->
-  <section id="hero" style="position:relative;overflow:hidden;">
-    <!-- Particle network canvas -->
-    <canvas id="hero-canvas" aria-hidden="true" style="position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;"></canvas>
+  <section id="hero">
 
-    <div class="hero-inner" style="position:relative;z-index:1;">
+    <!-- LEFT: copy -->
+    <div class="hero-inner">
       <div class="hero-eyebrow fi">
         <span class="eyebrow-line"></span>
         London IT Support · Est. 2009
@@ -94,20 +93,66 @@
         <a href="#services" class="btn-link">See our services →</a>
       </div>
     </div>
-    <div class="hero-meta fi" aria-hidden="true" style="position:relative;z-index:1;">
-      <div class="meta-item">
-        <div class="meta-num"><span data-count="90" data-suffix="min">90min</span></div>
-        <div class="meta-label">SLA response</div>
+
+    <!-- RIGHT: live monitoring panel -->
+    <div class="monitor-panel fi" aria-label="Live systems status" role="region">
+      <div class="monitor-header">
+        <span class="monitor-live"><span class="monitor-dot"></span>LIVE</span>
+        <span class="monitor-title">EC2IT SYSTEMS MONITOR</span>
+        <span class="monitor-clock" id="monitor-clock">--:--:--</span>
       </div>
-      <div class="meta-item">
-        <div class="meta-num">24/7</div>
-        <div class="meta-label">systems monitoring</div>
+
+      <div class="monitor-status-list">
+        <div class="monitor-row">
+          <span class="mstatus ok"></span>
+          <span class="mname">Network</span>
+          <div class="mbar"><div class="mfill" style="width:99.9%"></div></div>
+          <span class="mval" id="ms-network">99.9%</span>
+        </div>
+        <div class="monitor-row">
+          <span class="mstatus ok"></span>
+          <span class="mname">Helpdesk</span>
+          <div class="mbar"><div class="mfill" style="width:100%"></div></div>
+          <span class="mval">LIVE</span>
+        </div>
+        <div class="monitor-row">
+          <span class="mstatus ok"></span>
+          <span class="mname">Security</span>
+          <div class="mbar"><div class="mfill" style="width:100%"></div></div>
+          <span class="mval" id="ms-threats">0 threats</span>
+        </div>
+        <div class="monitor-row">
+          <span class="mstatus ok"></span>
+          <span class="mname">Cloud (M365)</span>
+          <div class="mbar"><div class="mfill" style="width:98.7%"></div></div>
+          <span class="mval">SYNC</span>
+        </div>
+        <div class="monitor-row">
+          <span class="mstatus ok"></span>
+          <span class="mname">Backups</span>
+          <div class="mbar"><div class="mfill" style="width:100%"></div></div>
+          <span class="mval" id="ms-backup">OK</span>
+        </div>
       </div>
-      <div class="meta-item">
-        <div class="meta-num"><span data-count="500" data-suffix="+">500+</span></div>
-        <div class="meta-label">users supported</div>
+
+      <div class="monitor-graph-wrap">
+        <span class="monitor-graph-label">Network traffic</span>
+        <canvas id="monitor-graph" aria-hidden="true"></canvas>
+      </div>
+
+      <div class="monitor-logs" id="monitor-logs" aria-live="polite">
+        <div class="mlog"><span class="mlog-ok">[OK]</span> Monitoring: 500 endpoints responsive</div>
+        <div class="mlog"><span class="mlog-ok">[OK]</span> Backup completed — 142 GB synced</div>
+        <div class="mlog"><span class="mlog-info">[INFO]</span> Patch MS25-0112 applied to 24 nodes</div>
+        <div class="mlog"><span class="mlog-ok">[OK]</span> Security scan: 0 incidents detected</div>
+      </div>
+
+      <div class="monitor-footer">
+        <span>Uptime: <strong id="monitor-uptime">15y 2m</strong></span>
+        <span><span class="mstatus ok" style="display:inline-block;margin-right:4px;"></span>All systems operational</span>
       </div>
     </div>
+
   </section>
 
   <!-- SERVICES -->
