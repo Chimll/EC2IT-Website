@@ -4,99 +4,49 @@
   'use strict';
 
   /* ════════════════════════════════════════════
-     1. TERMINAL BOOT LOADER
+     1. PREMIUM BRAND LOADER
   ════════════════════════════════════════════ */
-  function initBootLoader() {
-    const overlay = document.getElementById('boot-loader');
-    if (!overlay) return;
+  function initPremiumLoader() {
+    const loader = document.getElementById('site-loader');
+    if (!loader) return;
 
-    // Only show once per browser session
-    if (sessionStorage.getItem('ec2it_booted')) {
-      overlay.style.display = 'none';
+    // Skip on repeat visits within the same session
+    if (sessionStorage.getItem('ec2it_loaded')) {
+      loader.style.display = 'none';
       return;
     }
 
-    const lines = [
-      { text: 'EC2IT OS v15.0  —  BOOT SEQUENCE INITIATED', delay: 0, type: 'header' },
-      { text: '', delay: 300 },
-      { text: 'Checking network connectivity', delay: 500, ok: true },
-      { text: 'Loading security protocols', delay: 900, ok: true },
-      { text: 'Starting 24/7 monitoring systems', delay: 1350, ok: true },
-      { text: 'Connecting helpdesk — 90min SLA active', delay: 1850, ok: true },
-      { text: 'Authenticating 500+ endpoints', delay: 2300, ok: true },
-      { text: 'Verifying engineer availability', delay: 2700, ok: true },
-      { text: '', delay: 3000 },
-      { text: 'ALL SYSTEMS OPERATIONAL.', delay: 3200, type: 'success' },
-      { text: '', delay: 3400 },
-      { text: 'WELCOME TO EC2IT.', delay: 3500, type: 'welcome' },
-    ];
+    // Lock scroll while loader is active
+    document.body.style.overflow = 'hidden';
 
-    const output = overlay.querySelector('.boot-output');
-    const skipHint = overlay.querySelector('.boot-skip');
-
-    let dismissed = false;
-    let allDone = false;
-
-    function dismiss() {
-      if (dismissed) return;
-      dismissed = true;
-      overlay.classList.add('fade-out');
-      setTimeout(() => { overlay.style.display = 'none'; }, 600);
-      sessionStorage.setItem('ec2it_booted', '1');
-    }
-
-    // Skip on click or key
-    overlay.addEventListener('click', dismiss);
-    document.addEventListener('keydown', function onKey(e) {
-      if (e.key !== 'F12') { dismiss(); document.removeEventListener('keydown', onKey); }
-    }, { once: false });
-
-    // Show skip hint after 1s
-    setTimeout(() => { if (skipHint) skipHint.style.opacity = '1'; }, 1000);
-
-    // Type each line
-    lines.forEach(({ text, delay, type, ok }) => {
-      setTimeout(() => {
-        if (dismissed) return;
-        const line = document.createElement('div');
-        line.className = 'boot-line';
-        if (type === 'header') line.classList.add('boot-header');
-        if (type === 'success') line.classList.add('boot-success');
-        if (type === 'welcome') line.classList.add('boot-welcome');
-
-        if (ok) {
-          line.innerHTML = `<span class="boot-text"></span><span class="boot-ok">[  OK  ]</span>`;
-          typeText(line.querySelector('.boot-text'), text, 18);
-        } else {
-          typeText(line, text, type === 'header' ? 22 : 28);
-        }
-        output.appendChild(line);
-        output.scrollTop = output.scrollHeight;
-      }, delay);
-    });
-
-    // Auto-dismiss 1.2s after last line
-    const lastDelay = lines[lines.length - 1].delay;
+    // Phase 1 — tiny delay so first paint is not blocked, then start ring + progress bar
     setTimeout(() => {
-      allDone = true;
-      dismiss();
-    }, lastDelay + 1200);
+      loader.classList.add('progress');
+    }, 80);
 
-    function typeText(el, text, speed) {
-      let i = 0;
-      el.textContent = '';
-      if (!text) return;
-      const cursor = document.createElement('span');
-      cursor.className = 'boot-cursor';
-      cursor.textContent = '█';
-      el.appendChild(cursor);
-      const t = setInterval(() => {
-        if (dismissed && !allDone) { clearInterval(t); el.textContent = text; return; }
-        cursor.before(text[i] || '');
-        i++;
-        if (i >= text.length) { clearInterval(t); cursor.remove(); }
-      }, speed);
+    // Phase 2 — reveal: fade content then slide panels apart
+    function reveal() {
+      sessionStorage.setItem('ec2it_loaded', '1');
+      document.body.style.overflow = '';
+      loader.classList.add('reveal');
+      // Remove from DOM after transition finishes so it no longer intercepts events
+      setTimeout(() => {
+        loader.style.display = 'none';
+      }, 1000);
     }
+
+    // Auto-reveal after ring fills (1.5 s progress + small buffer)
+    const autoTimer = setTimeout(reveal, 1900);
+
+    // Allow skipping by click or any key (except F12)
+    function skip() {
+      clearTimeout(autoTimer);
+      reveal();
+    }
+    loader.addEventListener('click', skip);
+    document.addEventListener('keydown', function onKey(e) {
+      if (e.key !== 'F12') { skip(); document.removeEventListener('keydown', onKey); }
+    });
   }
 
   /* ════════════════════════════════════════════
@@ -553,7 +503,7 @@
   }
 
   /* ── Init all features ── */
-  initBootLoader();
+  initPremiumLoader();
   initMonitorPanel();
   initCounters();
   initTerminal();

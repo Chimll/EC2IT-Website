@@ -27,13 +27,33 @@
 </head>
 <body>
 
-  <!-- ══ BOOT LOADER ══ -->
-  <div id="boot-loader" role="dialog" aria-label="Boot sequence">
-    <div class="boot-output"></div>
-    <div class="boot-skip">Click or press any key to skip</div>
+  <!-- ══ BRAND LOADER ══ -->
+  <div id="site-loader" aria-hidden="true">
+    <!-- Two panels that slide apart on exit -->
+    <div class="loader-panel loader-l"></div>
+    <div class="loader-panel loader-r"></div>
+
+    <!-- Centered brand content -->
+    <div class="loader-content" id="loader-content">
+      <div class="loader-mark">
+        <!-- Animated ring drawn by JS -->
+        <svg class="loader-ring" viewBox="0 0 160 160" aria-hidden="true">
+          <circle class="loader-ring-track" cx="80" cy="80" r="72"/>
+          <circle class="loader-ring-fill"  cx="80" cy="80" r="72"/>
+        </svg>
+        <div class="loader-wordmark">EC2<span>IT</span></div>
+      </div>
+      <p class="loader-tagline">London IT Support</p>
+      <p class="loader-est">Est. 2009</p>
+    </div>
+
+    <!-- Bottom progress line -->
+    <div class="loader-progress-wrap">
+      <div class="loader-progress" id="loader-progress"></div>
+    </div>
   </div>
 
-  <!-- ══ TERMINAL EASTER EGG ══ -->
+  <!-- ══ TERMINAL EASTER EGG (hidden — press ` to open) ══ -->
   <div id="ec2-terminal" role="dialog" aria-label="EC2IT Terminal" aria-hidden="true">
     <div class="term-bar">
       <span class="term-dots"><span></span><span></span><span></span></span>
@@ -46,7 +66,6 @@
       <input class="term-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type a command…" aria-label="Terminal input" />
     </div>
   </div>
-  <div class="term-hint" title="Press ` to open terminal">_</div>
 
   <!-- NAV -->
   <nav id="main-nav">
