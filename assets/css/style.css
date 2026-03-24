@@ -537,20 +537,104 @@ h1 em { font-style: normal; color: var(--accent); }
 .stat-n span { font-size: 1.1rem; }
 .stat-l { font-size: 0.8rem; color: var(--light); }
 
-/* ── PARTNERS ── */
-#partners { padding: 5rem 7%; border-bottom: 1px solid var(--border); }
-.partners-inner { display: flex; align-items: center; gap: 3rem; flex-wrap: wrap; }
-.partners-label {
-  font-size: 0.72rem; font-weight: 500; color: var(--light);
-  text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap;
+/* ── CLIENT TICKER ── */
+#clients-ticker {
+  padding: 4rem 0 4.5rem;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
 }
-.partners-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-.p-chip {
-  font-size: 0.8rem; font-weight: 500; color: var(--light);
-  padding: 0.35rem 0.9rem; border: 1px solid var(--border); border-radius: 4px;
-  transition: color 0.2s, border-color 0.2s;
+.ticker-header {
+  text-align: center;
+  margin-bottom: 2.2rem;
 }
-.p-chip:hover { color: var(--text); border-color: #c0c0c0; }
+.ticker-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--light);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+
+/* Outer mask — fades edges to white */
+.ticker-wrap {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+.ticker-wrap::before,
+.ticker-wrap::after {
+  content: '';
+  position: absolute; top: 0; bottom: 0;
+  width: 12rem;
+  z-index: 2;
+  pointer-events: none;
+}
+.ticker-wrap::before {
+  left: 0;
+  background: linear-gradient(to right, #ffffff, transparent);
+}
+.ticker-wrap::after {
+  right: 0;
+  background: linear-gradient(to left, #ffffff, transparent);
+}
+
+/* Track: two identical sets side by side, animates -50% then resets */
+.ticker-track {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: max-content;
+  animation: ticker-scroll 32s linear infinite;
+  will-change: transform;
+}
+.ticker-wrap:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* Individual logo pill */
+.ticker-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 2rem;
+  margin: 0 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--sub);
+  white-space: nowrap;
+  transition: color 0.25s, border-color 0.25s, background 0.25s;
+  cursor: default;
+}
+.ticker-logo:hover {
+  color: var(--text);
+  border-color: #b0b0b0;
+  background: var(--off);
+}
+
+/* Initial letter mark */
+.tl-mark {
+  width: 24px; height: 24px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+
+/* Respect reduce-motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track { animation: none; }
+}
 
 /* ── FAQ ── */
 #faq { padding: 8rem 7%; border-bottom: 1px solid var(--border); }
