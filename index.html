@@ -12,7 +12,7 @@
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
   <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://formspree.io; frame-src 'none'; object-src 'none'; base-uri 'self';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://formspree.io; frame-src 'none'; object-src 'none'; base-uri 'self';" />
 
   <!-- Open Graph -->
   <meta property="og:title" content="EC2IT – Trusted IT Support London" />
@@ -27,30 +27,32 @@
 </head>
 <body>
 
-  <!-- ══ BRAND LOADER ══ -->
+  <!-- ══ 3D INTRO LOADER ══ -->
   <div id="site-loader" aria-hidden="true">
-    <!-- Two panels that slide apart on exit -->
-    <div class="loader-panel loader-l"></div>
-    <div class="loader-panel loader-r"></div>
+    <!-- Three.js renders into this canvas -->
+    <canvas id="loader-canvas"></canvas>
 
-    <!-- Centered brand content -->
-    <div class="loader-content" id="loader-content">
-      <div class="loader-mark">
-        <!-- Animated ring drawn by JS -->
-        <svg class="loader-ring" viewBox="0 0 160 160" aria-hidden="true">
-          <circle class="loader-ring-track" cx="80" cy="80" r="72"/>
-          <circle class="loader-ring-fill"  cx="80" cy="80" r="72"/>
-        </svg>
-        <div class="loader-wordmark">EC2<span>IT</span></div>
+    <!-- Cinematic vignette -->
+    <div class="loader-vignette"></div>
+
+    <!-- Text cards — revealed by JS as camera progresses -->
+    <div id="loader-overlay">
+      <div class="lt-card" id="lt-0">No Scripts.</div>
+      <div class="lt-card" id="lt-1">No Tiered Support.</div>
+      <div class="lt-card" id="lt-2">Fixed Monthly Cost.</div>
+      <div class="lt-card lt-brand" id="lt-3">
+        <div class="lt-wordmark">EC2<span>IT</span></div>
+        <p class="lt-sub">London IT Support · Est. 2009</p>
       </div>
-      <p class="loader-tagline">London IT Support</p>
-      <p class="loader-est">Est. 2009</p>
     </div>
 
-    <!-- Bottom progress line -->
+    <!-- Bottom progress bar -->
     <div class="loader-progress-wrap">
       <div class="loader-progress" id="loader-progress"></div>
     </div>
+
+    <!-- Skip hint -->
+    <p class="loader-skip-hint">Click anywhere or press any key to skip</p>
   </div>
 
   <!-- ══ TERMINAL EASTER EGG (hidden — press ` to open) ══ -->
@@ -491,6 +493,7 @@
 
   <a href="contact.html" class="float-btn">Get Support</a>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="assets/js/main.js" defer></script>
 </body>
 </html>

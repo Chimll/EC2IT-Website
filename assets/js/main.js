@@ -4,7 +4,7 @@
   'use strict';
 
   /* ════════════════════════════════════════════
-     1. PREMIUM BRAND LOADER
+     1. 3D DATA CENTRE INTRO
   ════════════════════════════════════════════ */
   function initPremiumLoader() {
     const loader = document.getElementById('site-loader');
@@ -16,37 +16,206 @@
       return;
     }
 
-    // Lock scroll while loader is active
     document.body.style.overflow = 'hidden';
 
-    // Phase 1 — tiny delay so first paint is not blocked, then start ring + progress bar
-    setTimeout(() => {
-      loader.classList.add('progress');
-    }, 80);
-
-    // Phase 2 — reveal: fade content then slide panels apart
+    // ── Shared reveal/cleanup ───────────────────
     function reveal() {
+      running = false;
       sessionStorage.setItem('ec2it_loaded', '1');
       document.body.style.overflow = '';
-      loader.classList.add('reveal');
-      // Remove from DOM after transition finishes so it no longer intercepts events
-      setTimeout(() => {
+      loader.style.transition = 'opacity 0.75s ease';
+      loader.style.opacity = '0';
+      setTimeout(function () {
         loader.style.display = 'none';
-      }, 1000);
+        if (renderer) renderer.dispose();
+      }, 800);
     }
 
-    // Auto-reveal after ring fills (1.5 s progress + small buffer)
-    const autoTimer = setTimeout(reveal, 1900);
+    var running = true;
 
-    // Allow skipping by click or any key (except F12)
-    function skip() {
-      clearTimeout(autoTimer);
-      reveal();
+    // ── Fallback for mobile or if Three.js fails ─
+    var isMobile = window.innerWidth < 768;
+    if (isMobile || typeof THREE === 'undefined') {
+      var pb = document.getElementById('loader-progress');
+      if (pb) {
+        pb.style.transition = 'width 2s ease';
+        setTimeout(function () { pb.style.width = '100%'; }, 60);
+      }
+      setTimeout(reveal, 2400);
+      loader.addEventListener('click', reveal);
+      return;
     }
+
+    // ════════════════════════════════════════════
+    //  THREE.JS DATA CENTRE SCENE
+    // ════════════════════════════════════════════
+    var canvas   = document.getElementById('loader-canvas');
+    var W        = window.innerWidth;
+    var H        = window.innerHeight;
+    var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+    renderer.setSize(W, H);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    var scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020408);
+    scene.fog = new THREE.FogExp2(0x020408, 0.026);
+
+    var camera = new THREE.PerspectiveCamera(62, W / H, 0.1, 140);
+    camera.position.set(0, 1.55, 5);
+
+    // ── Materials ────────────────────────────────
+    var mRack  = new THREE.MeshLambertMaterial({ color: 0x0b1020 });
+    var mDoor  = new THREE.MeshLambertMaterial({ color: 0x131b2e });
+    var mFloor = new THREE.MeshLambertMaterial({ color: 0x060810 });
+    var mLedB  = new THREE.MeshBasicMaterial({ color: 0x0057ff });
+    var mLedC  = new THREE.MeshBasicMaterial({ color: 0x00aaff });
+    var mLedG  = new THREE.MeshBasicMaterial({ color: 0x00e0a0 });
+    var ledMats = [mLedB, mLedB, mLedC, mLedB, mLedG, mLedC, mLedB, mLedB];
+
+    // ── Shared geometries ─────────────────────────
+    var gBody  = new THREE.BoxGeometry(0.9, 2.2, 0.58);
+    var gDoor  = new THREE.BoxGeometry(0.82, 2.1, 0.04);
+    var gLed   = new THREE.BoxGeometry(0.52, 0.018, 0.01);
+    var gFloor = new THREE.PlaneGeometry(8, 200);
+    var gCeil  = new THREE.PlaneGeometry(8, 200);
+
+    // ── Build a rack unit ─────────────────────────
+    function makeRack(x, z) {
+      var g = new THREE.Group();
+
+      var body = new THREE.Mesh(gBody, mRack);
+      body.position.y = 1.1;
+      g.add(body);
+
+      var door = new THREE.Mesh(gDoor, mDoor);
+      door.position.set(0, 1.1, 0.30);
+      g.add(door);
+
+      // LED rows
+      for (var r = 0; r < 8; r++) {
+        if (Math.random() > 0.14) {
+          var led = new THREE.Mesh(gLed, ledMats[r % ledMats.length]);
+          led.position.set((Math.random() - 0.5) * 0.14, 0.35 + r * 0.245, 0.33);
+          g.add(led);
+        }
+      }
+
+      g.position.set(x, 0, z);
+      scene.add(g);
+    }
+
+    // ── Populate corridor ─────────────────────────
+    var RACKS   = 32;
+    var SPACING = 2.75;
+    for (var i = 0; i < RACKS; i++) {
+      var rz = -(i * SPACING) - 3;
+      makeRack(-2.15, rz);
+      makeRack( 2.15, rz);
+    }
+
+    // ── Floor & ceiling ───────────────────────────
+    var floor = new THREE.Mesh(gFloor, mFloor);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.set(0, 0, -50);
+    scene.add(floor);
+
+    var ceil = new THREE.Mesh(gCeil, mFloor);
+    ceil.rotation.x = Math.PI / 2;
+    ceil.position.set(0, 2.85, -50);
+    scene.add(ceil);
+
+    // Floor grid for depth cue
+    var grid = new THREE.GridHelper(8, 24, 0x0c2260, 0x08101e);
+    grid.position.set(0, 0.005, -50);
+    scene.add(grid);
+
+    // ── Lighting ──────────────────────────────────
+    scene.add(new THREE.AmbientLight(0x0a1535, 2.4));
+    for (var p = 0; p < 12; p++) {
+      var pt = new THREE.PointLight(0x0055dd, 1.0, 14);
+      pt.position.set(0, 2.7, -(p * 7) - 4);
+      scene.add(pt);
+    }
+
+    // ── Text cards ────────────────────────────────
+    var CARDS = [
+      document.getElementById('lt-0'),
+      document.getElementById('lt-1'),
+      document.getElementById('lt-2'),
+      document.getElementById('lt-3')
+    ];
+    // [showAt, hideAt] as fraction of total progress 0–1
+    var BEATS = [
+      [0.05, 0.25],
+      [0.30, 0.50],
+      [0.55, 0.75],
+      [0.80, 1.00]
+    ];
+
+    function updateCards(raw) {
+      for (var c = 0; c < CARDS.length; c++) {
+        if (!CARDS[c]) continue;
+        var on = raw >= BEATS[c][0] && raw < BEATS[c][1];
+        if (on) CARDS[c].classList.add('lt-visible');
+        else    CARDS[c].classList.remove('lt-visible');
+      }
+    }
+
+    var progressEl = document.getElementById('loader-progress');
+
+    // ── Camera path ───────────────────────────────
+    var START_Z  =  5;
+    var END_Z    = -(RACKS * SPACING * 0.55);
+    var DURATION = 6400; // ms total
+    var t0       = null;
+
+    function tick(ts) {
+      if (!running) return;
+      if (!t0) t0 = ts;
+
+      var elapsed = ts - t0;
+      var raw     = Math.min(elapsed / DURATION, 1);
+
+      // Ease-in-out cubic
+      var p = raw < 0.5
+        ? 4 * raw * raw * raw
+        : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+
+      // Fly camera forward
+      camera.position.z = START_Z + (END_Z - START_Z) * p;
+      // Gentle organic sway
+      camera.position.x = Math.sin(elapsed * 0.00022) * 0.10;
+      camera.position.y = 1.55 + Math.sin(elapsed * 0.00038) * 0.055;
+      camera.lookAt(
+        camera.position.x * 0.25,
+        1.55,
+        camera.position.z - 18
+      );
+
+      updateCards(raw);
+      if (progressEl) progressEl.style.width = (raw * 100) + '%';
+
+      renderer.render(scene, camera);
+
+      if (raw >= 1) { reveal(); return; }
+      requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+
+    // ── Skip handler ──────────────────────────────
+    function skip() { if (running) reveal(); }
     loader.addEventListener('click', skip);
     document.addEventListener('keydown', function onKey(e) {
       if (e.key !== 'F12') { skip(); document.removeEventListener('keydown', onKey); }
     });
+
+    // ── Resize ────────────────────────────────────
+    window.addEventListener('resize', function () {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }, { passive: true });
   }
 
   /* ════════════════════════════════════════════
