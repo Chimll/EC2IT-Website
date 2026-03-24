@@ -113,63 +113,72 @@
       </div>
     </div>
 
-    <!-- RIGHT: live monitoring panel -->
-    <div class="monitor-panel fi" aria-label="Live systems status" role="region">
-      <div class="monitor-header">
-        <span class="monitor-live"><span class="monitor-dot"></span>LIVE</span>
-        <span class="monitor-title">EC2IT SYSTEMS MONITOR</span>
-        <span class="monitor-clock" id="monitor-clock">--:--:--</span>
-      </div>
+    <!-- RIGHT: promise panel -->
+    <div class="promise-panel fi" role="region" aria-label="EC2IT service commitments">
 
-      <div class="monitor-status-list">
-        <div class="monitor-row">
-          <span class="mstatus ok"></span>
-          <span class="mname">Network</span>
-          <div class="mbar"><div class="mfill" style="width:99.9%"></div></div>
-          <span class="mval" id="ms-network">99.9%</span>
+      <!-- Key metrics -->
+      <div class="pp-stats">
+        <div class="pp-stat">
+          <div class="pp-stat-num">90<span>min</span></div>
+          <div class="pp-stat-label">Response SLA</div>
         </div>
-        <div class="monitor-row">
-          <span class="mstatus ok"></span>
-          <span class="mname">Helpdesk</span>
-          <div class="mbar"><div class="mfill" style="width:100%"></div></div>
-          <span class="mval">LIVE</span>
+        <div class="pp-stat-divider"></div>
+        <div class="pp-stat">
+          <div class="pp-stat-num">24/7</div>
+          <div class="pp-stat-label">Support coverage</div>
         </div>
-        <div class="monitor-row">
-          <span class="mstatus ok"></span>
-          <span class="mname">Security</span>
-          <div class="mbar"><div class="mfill" style="width:100%"></div></div>
-          <span class="mval" id="ms-threats">0 threats</span>
-        </div>
-        <div class="monitor-row">
-          <span class="mstatus ok"></span>
-          <span class="mname">Cloud (M365)</span>
-          <div class="mbar"><div class="mfill" style="width:98.7%"></div></div>
-          <span class="mval">SYNC</span>
-        </div>
-        <div class="monitor-row">
-          <span class="mstatus ok"></span>
-          <span class="mname">Backups</span>
-          <div class="mbar"><div class="mfill" style="width:100%"></div></div>
-          <span class="mval" id="ms-backup">OK</span>
+        <div class="pp-stat-divider"></div>
+        <div class="pp-stat">
+          <div class="pp-stat-num">3<span>ring</span></div>
+          <div class="pp-stat-label">Call answer time</div>
         </div>
       </div>
 
-      <div class="monitor-graph-wrap">
-        <span class="monitor-graph-label">Network traffic</span>
-        <canvas id="monitor-graph" aria-hidden="true"></canvas>
+      <div class="pp-divider"></div>
+
+      <!-- What makes EC2IT different -->
+      <ul class="pp-list">
+        <li class="pp-item">
+          <span class="pp-check" aria-hidden="true">✓</span>
+          <div>
+            <strong>No tiered support</strong>
+            <span>You reach a qualified engineer every time — no call centres, no holding queues</span>
+          </div>
+        </li>
+        <li class="pp-item">
+          <span class="pp-check" aria-hidden="true">✓</span>
+          <div>
+            <strong>No scripts</strong>
+            <span>Real diagnosis from the first call — not checkbox troubleshooting</span>
+          </div>
+        </li>
+        <li class="pp-item">
+          <span class="pp-check" aria-hidden="true">✓</span>
+          <div>
+            <strong>Fixed monthly fee</strong>
+            <span>Predictable costs with no hidden charges or surprise invoices</span>
+          </div>
+        </li>
+        <li class="pp-item">
+          <span class="pp-check" aria-hidden="true">✓</span>
+          <div>
+            <strong>London-based engineers</strong>
+            <span>On-site within hours when remote support isn't enough</span>
+          </div>
+        </li>
+        <li class="pp-item">
+          <span class="pp-check" aria-hidden="true">✓</span>
+          <div>
+            <strong>Dedicated account manager</strong>
+            <span>One person who knows your business, your systems, and your team</span>
+          </div>
+        </li>
+      </ul>
+
+      <div class="pp-footer">
+        <span class="pp-trust">Trusted by London businesses since 2009 · 500+ endpoints managed</span>
       </div>
 
-      <div class="monitor-logs" id="monitor-logs" aria-live="polite">
-        <div class="mlog"><span class="mlog-ok">[OK]</span> Monitoring: 500 endpoints responsive</div>
-        <div class="mlog"><span class="mlog-ok">[OK]</span> Backup completed — 142 GB synced</div>
-        <div class="mlog"><span class="mlog-info">[INFO]</span> Patch MS25-0112 applied to 24 nodes</div>
-        <div class="mlog"><span class="mlog-ok">[OK]</span> Security scan: 0 incidents detected</div>
-      </div>
-
-      <div class="monitor-footer">
-        <span>Uptime: <strong id="monitor-uptime">15y 2m</strong></span>
-        <span><span class="mstatus ok" style="display:inline-block;margin-right:4px;"></span>All systems operational</span>
-      </div>
     </div>
 
   </section>

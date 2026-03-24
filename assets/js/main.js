@@ -50,152 +50,7 @@
   }
 
   /* ════════════════════════════════════════════
-     2. LIVE MONITORING PANEL
-  ════════════════════════════════════════════ */
-  function initMonitorPanel() {
-    const panel = document.querySelector('.monitor-panel');
-    if (!panel) return;
-
-    /* ── Clock ── */
-    const clockEl = document.getElementById('monitor-clock');
-    function tickClock() {
-      if (!clockEl) return;
-      const n = new Date();
-      clockEl.textContent = [n.getHours(), n.getMinutes(), n.getSeconds()]
-        .map((v) => String(v).padStart(2, '0')).join(':');
-    }
-    tickClock();
-    setInterval(tickClock, 1000);
-
-    /* ── Pulse graph ── */
-    const canvas = document.getElementById('monitor-graph');
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      const BUF = 120;
-      // Seed with realistic-looking traffic (mostly 20–40%, occasional spikes)
-      const data = Array.from({ length: BUF }, (_, i) => {
-        const base = 22 + Math.sin(i * 0.18) * 8;
-        const noise = (Math.random() - 0.5) * 10;
-        const spike = Math.random() < 0.06 ? Math.random() * 45 : 0;
-        return Math.max(5, Math.min(95, base + noise + spike));
-      });
-
-      function resizeCanvas() {
-        canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-        canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-        ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-      }
-      resizeCanvas();
-
-      function drawGraph() {
-        const W = canvas.offsetWidth;
-        const H = canvas.offsetHeight;
-        ctx.clearRect(0, 0, W, H);
-
-        // Grid lines
-        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-        ctx.lineWidth = 1;
-        [0.25, 0.5, 0.75].forEach((f) => {
-          ctx.beginPath();
-          ctx.moveTo(0, H * f);
-          ctx.lineTo(W, H * f);
-          ctx.stroke();
-        });
-
-        // Build path
-        const step = W / (BUF - 1);
-        ctx.beginPath();
-        data.forEach((v, i) => {
-          const x = i * step;
-          const y = H - (v / 100) * H * 0.9 - H * 0.05;
-          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        });
-
-        // Stroke
-        ctx.strokeStyle = '#0057ff';
-        ctx.lineWidth = 1.5;
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-
-        // Fill gradient below line
-        const grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, 'rgba(0,87,255,0.2)');
-        grad.addColorStop(1, 'rgba(0,87,255,0)');
-        ctx.lineTo(W, H);
-        ctx.lineTo(0, H);
-        ctx.closePath();
-        ctx.fillStyle = grad;
-        ctx.fill();
-      }
-
-      // Advance data every 300ms (feels live)
-      function advanceData() {
-        const last = data[data.length - 1];
-        const drift = (Math.random() - 0.5) * 12;
-        const spike = Math.random() < 0.04 ? Math.random() * 50 : 0;
-        data.push(Math.max(5, Math.min(95, last + drift + spike)));
-        data.shift();
-        drawGraph();
-      }
-      drawGraph();
-      setInterval(advanceData, 280);
-      window.addEventListener('resize', () => { resizeCanvas(); drawGraph(); }, { passive: true });
-    }
-
-    /* ── Log stream ── */
-    const logsEl = document.getElementById('monitor-logs');
-    const LOG_POOL = [
-      ['OK',   'Network check: all 500 nodes responsive'],
-      ['OK',   'Backup completed — 142 GB synced to cloud'],
-      ['INFO', 'VPN session opened: James.T@client.co.uk'],
-      ['OK',   'Patch MS25-0291 applied to 24 endpoints'],
-      ['INFO', 'Helpdesk ticket #4821 resolved in 18 min'],
-      ['OK',   'Security scan: 0 threats detected'],
-      ['INFO', 'M365 licence audit — 0 anomalies'],
-      ['OK',   'Firewall rule updated across 12 devices'],
-      ['INFO', 'Scheduled reboot: SRV-PROD-01 — no impact'],
-      ['OK',   'SSL cert renewal: 90 days remaining'],
-      ['INFO', '2FA enrolled: 3 new users onboarded'],
-      ['OK',   'DNS check: all records healthy'],
-      ['INFO', 'Asset scan: 500 devices inventoried'],
-      ['OK',   'EDR signature update pushed to all endpoints'],
-      ['INFO', 'Email filter: 148 spam messages quarantined'],
-    ];
-    let logIdx = 0;
-
-    function addLog() {
-      if (!logsEl) return;
-      const [type, msg] = LOG_POOL[logIdx % LOG_POOL.length];
-      logIdx++;
-      const now = new Date();
-      const ts = [now.getHours(), now.getMinutes(), now.getSeconds()]
-        .map((v) => String(v).padStart(2, '0')).join(':');
-      const cls = type === 'OK' ? 'mlog-ok' : type === 'WARN' ? 'mlog-warn' : 'mlog-info';
-      const line = document.createElement('div');
-      line.className = 'mlog';
-      line.innerHTML = `<span class="${cls}">[${type}]</span> ${ts} ${msg}`;
-      logsEl.prepend(line);
-      // Keep max 4 lines
-      while (logsEl.children.length > 4) logsEl.lastElementChild.remove();
-    }
-    // Stagger first few additions
-    setTimeout(addLog, 1800);
-    setTimeout(addLog, 3400);
-    setInterval(addLog, 4500);
-
-    /* ── Uptime counter ── */
-    const uptimeEl = document.getElementById('monitor-uptime');
-    if (uptimeEl) {
-      const founded = new Date('2009-01-15');
-      const diff = Date.now() - founded;
-      const yrs = Math.floor(diff / (365.25 * 24 * 3600 * 1000));
-      const mos = Math.floor((diff % (365.25 * 24 * 3600 * 1000)) / (30.44 * 24 * 3600 * 1000));
-      uptimeEl.textContent = `${yrs}y ${mos}m`;
-    }
-  }
-
-  /* ════════════════════════════════════════════
-     3. ANIMATED STAT COUNTERS
+     2. ANIMATED STAT COUNTERS
   ════════════════════════════════════════════ */
   function initCounters() {
     const counters = document.querySelectorAll('[data-count]');
@@ -234,7 +89,7 @@
   }
 
   /* ════════════════════════════════════════════
-     4. HIDDEN TERMINAL EASTER EGG
+     3. HIDDEN TERMINAL EASTER EGG
   ════════════════════════════════════════════ */
   function initTerminal() {
     const terminal = document.getElementById('ec2-terminal');
@@ -504,7 +359,6 @@
 
   /* ── Init all features ── */
   initPremiumLoader();
-  initMonitorPanel();
   initCounters();
   initTerminal();
 
