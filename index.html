@@ -81,6 +81,10 @@
     </ul>
     <div class="nav-right">
       <a href="tel:02081424660" class="nav-phone">020 8142 4660</a>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <span class="icon-moon" aria-hidden="true">🌙</span>
+        <span class="icon-sun"  aria-hidden="true">☀️</span>
+      </button>
       <a href="contact.html" class="nav-cta">Get in Touch</a>
       <button class="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
         <span></span><span></span><span></span>
@@ -118,21 +122,27 @@
     <!-- RIGHT: promise panel -->
     <div class="promise-panel fi" role="region" aria-label="EC2IT service commitments">
 
-      <!-- Key metrics -->
+      <!-- Key metrics — numbers animate from 0 on scroll -->
       <div class="pp-stats">
         <div class="pp-stat">
-          <div class="pp-stat-num">90<span>min</span></div>
+          <div class="pp-stat-num">
+            <span class="pp-count" data-count="90">0</span><span class="pp-unit">min</span>
+          </div>
           <div class="pp-stat-label">Response SLA</div>
         </div>
         <div class="pp-stat-divider"></div>
         <div class="pp-stat">
-          <div class="pp-stat-num">24/7</div>
+          <div class="pp-stat-num">
+            <span class="pp-count" data-count="24">0</span><span class="pp-unit">/7</span>
+          </div>
           <div class="pp-stat-label">Support coverage</div>
         </div>
         <div class="pp-stat-divider"></div>
         <div class="pp-stat">
-          <div class="pp-stat-num">3<span>ring</span></div>
-          <div class="pp-stat-label">Call answer time</div>
+          <div class="pp-stat-num">
+            <span class="pp-count" data-count="500">0</span><span class="pp-unit">+</span>
+          </div>
+          <div class="pp-stat-label">Endpoints managed</div>
         </div>
       </div>
 

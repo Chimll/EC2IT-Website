@@ -526,9 +526,67 @@
     });
   }
 
+  /* ════════════════════════════════════════════
+     4. DARK / LIGHT THEME TOGGLE
+  ════════════════════════════════════════════ */
+  function initThemeToggle() {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    // Restore saved preference (default: light)
+    const saved = localStorage.getItem('ec2it_theme');
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+    btn.addEventListener('click', function () {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('ec2it_theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('ec2it_theme', 'dark');
+      }
+    });
+  }
+
+  /* ════════════════════════════════════════════
+     5. PROMISE PANEL COUNTERS
+  ════════════════════════════════════════════ */
+  function initPromiseCounters() {
+    const counters = document.querySelectorAll('.pp-count');
+    if (!counters.length) return;
+
+    const seen = new Set();
+    const obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting || seen.has(entry.target)) return;
+        seen.add(entry.target);
+        const el = entry.target;
+        const target = parseInt(el.dataset.count, 10);
+        const duration = 1600;
+        const start = performance.now();
+
+        function tick(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          // Ease-out cubic
+          const ease = 1 - Math.pow(1 - progress, 3);
+          el.textContent = Math.round(target * ease);
+          if (progress < 1) requestAnimationFrame(tick);
+          else el.textContent = target;
+        }
+        requestAnimationFrame(tick);
+        obs.unobserve(el);
+      });
+    }, { threshold: 0.6 });
+
+    counters.forEach(function (el) { obs.observe(el); });
+  }
+
   /* ── Init all features ── */
   initPremiumLoader();
   initCounters();
   initTerminal();
+  initThemeToggle();
+  initPromiseCounters();
 
 })();
