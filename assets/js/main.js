@@ -19,16 +19,30 @@
     document.body.style.overflow = 'hidden';
 
     // ── Shared reveal/cleanup ───────────────────
-    function reveal() {
+    // skipMode = true when user clicks/presses to skip (quick flash instead of slow fade)
+    function reveal(skipMode) {
       running = false;
       sessionStorage.setItem('ec2it_loaded', '1');
       document.body.style.overflow = '';
-      loader.style.transition = 'opacity 0.75s ease';
-      loader.style.opacity = '0';
-      setTimeout(function () {
-        loader.style.display = 'none';
-        if (renderer) renderer.dispose();
-      }, 800);
+
+      var fEl = document.getElementById('loader-flash');
+
+      if (skipMode) {
+        // Quick white flash then gone
+        if (fEl) fEl.style.transition = 'opacity 0.25s ease';
+        if (fEl) fEl.style.opacity = '1';
+        setTimeout(function () {
+          loader.style.display = 'none';
+          if (renderer) renderer.dispose();
+        }, 270);
+      } else {
+        // Punch-through: flash is already at full opacity from animation
+        // Hold one frame, then remove the whole loader
+        setTimeout(function () {
+          loader.style.display = 'none';
+          if (renderer) renderer.dispose();
+        }, 60);
+      }
     }
 
     var running = true;
@@ -105,7 +119,7 @@
     }
 
     // ── Populate corridor ─────────────────────────
-    var RACKS   = 32;
+    var RACKS   = 36;
     var SPACING = 2.75;
     for (var i = 0; i < RACKS; i++) {
       var rz = -(i * SPACING) - 3;
@@ -116,22 +130,36 @@
     // ── Floor & ceiling ───────────────────────────
     var floor = new THREE.Mesh(gFloor, mFloor);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.set(0, 0, -50);
+    floor.position.set(0, 0, -60);
     scene.add(floor);
 
     var ceil = new THREE.Mesh(gCeil, mFloor);
     ceil.rotation.x = Math.PI / 2;
-    ceil.position.set(0, 2.85, -50);
+    ceil.position.set(0, 2.85, -60);
     scene.add(ceil);
 
     // Floor grid for depth cue
-    var grid = new THREE.GridHelper(8, 24, 0x0c2260, 0x08101e);
-    grid.position.set(0, 0.005, -50);
+    var grid = new THREE.GridHelper(8, 32, 0x0c2260, 0x08101e);
+    grid.position.set(0, 0.005, -60);
     scene.add(grid);
 
-    // ── Lighting ──────────────────────────────────
-    scene.add(new THREE.AmbientLight(0x0a1535, 2.4));
-    for (var p = 0; p < 12; p++) {
+    // ── End-wall portal (camera punches through this) ──
+    var PORTAL_Z = -(RACKS * SPACING) - 2;
+    var gPortal  = new THREE.PlaneGeometry(5, 3.2);
+    var mPortal  = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
+    var portalMesh = new THREE.Mesh(gPortal, mPortal);
+    portalMesh.position.set(0, 1.55, PORTAL_Z);
+    scene.add(portalMesh);
+
+    // Portal point light — dark at first, blazes white during rush
+    var portalLight = new THREE.PointLight(0xffffff, 0, 50);
+    portalLight.position.set(0, 1.55, PORTAL_Z + 3);
+    scene.add(portalLight);
+
+    // ── Ambient + corridor lights ─────────────────
+    var ambientLight = new THREE.AmbientLight(0x0a1535, 2.4);
+    scene.add(ambientLight);
+    for (var p = 0; p < 14; p++) {
       var pt = new THREE.PointLight(0x0055dd, 1.0, 14);
       pt.position.set(0, 2.7, -(p * 7) - 4);
       scene.add(pt);
@@ -144,12 +172,12 @@
       document.getElementById('lt-2'),
       document.getElementById('lt-3')
     ];
-    // [showAt, hideAt] as fraction of total progress 0–1
+    // [showAt, hideAt] as fraction 0–1 (hideAt capped before rush at 0.78)
     var BEATS = [
-      [0.05, 0.25],
-      [0.30, 0.50],
-      [0.55, 0.75],
-      [0.80, 1.00]
+      [0.04, 0.22],
+      [0.27, 0.46],
+      [0.51, 0.70],
+      [0.75, 0.88]
     ];
 
     function updateCards(raw) {
@@ -162,12 +190,15 @@
     }
 
     var progressEl = document.getElementById('loader-progress');
+    var flashEl    = document.getElementById('loader-flash');
 
     // ── Camera path ───────────────────────────────
-    var START_Z  =  5;
-    var END_Z    = -(RACKS * SPACING * 0.55);
-    var DURATION = 6400; // ms total
-    var t0       = null;
+    // Fly through 72% of corridor normally, then RUSH the last 28%
+    var START_Z   =  5;
+    var CRUISE_Z  = -(RACKS * SPACING * 0.60);  // end of cruise phase
+    var DURATION  = 7000; // ms total
+    var RUSH_START = 0.78; // raw progress where rush begins
+    var t0 = null;
 
     function tick(ts) {
       if (!running) return;
@@ -176,35 +207,62 @@
       var elapsed = ts - t0;
       var raw     = Math.min(elapsed / DURATION, 1);
 
-      // Ease-in-out cubic
-      var p = raw < 0.5
-        ? 4 * raw * raw * raw
-        : 1 - Math.pow(-2 * raw + 2, 3) / 2;
+      // ── Split easing: cruise then rush ───────────
+      var p;
+      if (raw <= RUSH_START) {
+        // Ease-in-out cubic across cruise phase → maps to 0–0.72 of path
+        var r = raw / RUSH_START;
+        var eased = r < 0.5 ? 4*r*r*r : 1 - Math.pow(-2*r+2, 3)/2;
+        p = eased * 0.72;
+      } else {
+        // Cubic ease-in (accelerates hard) for the rush
+        var r = (raw - RUSH_START) / (1 - RUSH_START);
+        p = 0.72 + (r * r * r) * 0.28;
+      }
 
-      // Fly camera forward
-      camera.position.z = START_Z + (END_Z - START_Z) * p;
-      // Gentle organic sway
-      camera.position.x = Math.sin(elapsed * 0.00022) * 0.10;
-      camera.position.y = 1.55 + Math.sin(elapsed * 0.00038) * 0.055;
+      // Camera position
+      camera.position.z = START_Z + (PORTAL_Z - START_Z) * p;
+
+      // Sway fades to zero during rush so we go dead straight
+      var swayAmt = Math.max(0, 1 - Math.max(0, (raw - RUSH_START) / 0.12));
+      camera.position.x = Math.sin(elapsed * 0.00022) * 0.10 * swayAmt;
+      camera.position.y = 1.55 + Math.sin(elapsed * 0.00038) * 0.055 * swayAmt;
+
+      // Look-ahead shortens during rush (tunnel-vision effect)
+      var lookDist = 18 - Math.max(0, (raw - RUSH_START) / (1 - RUSH_START)) * 14;
       camera.lookAt(
-        camera.position.x * 0.25,
+        camera.position.x * 0.25 * swayAmt,
         1.55,
-        camera.position.z - 18
+        camera.position.z - Math.max(4, lookDist)
       );
+
+      // ── Portal blaze: ramp up white glow during rush ──
+      if (raw > RUSH_START) {
+        var rushT = (raw - RUSH_START) / (1 - RUSH_START); // 0→1
+        portalLight.intensity = rushT * rushT * 22;
+        mPortal.opacity       = rushT * rushT * 0.9;
+        ambientLight.intensity = 2.4 + rushT * rushT * 18;
+      }
+
+      // ── Flash overlay: white fills screen near end ──
+      if (raw > 0.88 && flashEl) {
+        var ft = (raw - 0.88) / 0.12;
+        flashEl.style.opacity = (ft * ft).toFixed(3);
+      }
 
       updateCards(raw);
       if (progressEl) progressEl.style.width = (raw * 100) + '%';
 
       renderer.render(scene, camera);
 
-      if (raw >= 1) { reveal(); return; }
+      if (raw >= 1) { reveal(false); return; }
       requestAnimationFrame(tick);
     }
 
     requestAnimationFrame(tick);
 
     // ── Skip handler ──────────────────────────────
-    function skip() { if (running) reveal(); }
+    function skip() { if (running) reveal(true); }
     loader.addEventListener('click', skip);
     document.addEventListener('keydown', function onKey(e) {
       if (e.key !== 'F12') { skip(); document.removeEventListener('keydown', onKey); }
