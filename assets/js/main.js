@@ -10,38 +10,28 @@
     const loader = document.getElementById('site-loader');
     if (!loader) return;
 
-    // Skip on repeat visits within the same session
-    if (sessionStorage.getItem('ec2it_loaded')) {
-      loader.style.display = 'none';
-      return;
-    }
-
     document.body.style.overflow = 'hidden';
 
     // ── Shared reveal/cleanup ───────────────────
-    // skipMode = true when user clicks/presses to skip (quick flash instead of slow fade)
     function reveal(skipMode) {
       running = false;
-      sessionStorage.setItem('ec2it_loaded', '1');
       document.body.style.overflow = '';
 
-      var fEl = document.getElementById('loader-flash');
-
       if (skipMode) {
-        // Quick white flash then gone
-        if (fEl) fEl.style.transition = 'opacity 0.25s ease';
-        if (fEl) fEl.style.opacity = '1';
+        // Quick fade out for skip
+        loader.style.transition = 'opacity 0.3s ease';
+        loader.style.opacity = '0';
         setTimeout(function () {
           loader.style.display = 'none';
           if (renderer) renderer.dispose();
-        }, 270);
+        }, 320);
       } else {
-        // Punch-through: flash is already at full opacity from animation
-        // Hold one frame, then remove the whole loader
+        // Punch-out: loader scales up and fades — feels like rushing into it
+        loader.classList.add('punch-out');
         setTimeout(function () {
           loader.style.display = 'none';
           if (renderer) renderer.dispose();
-        }, 60);
+        }, 560);
       }
     }
 
@@ -190,7 +180,6 @@
     }
 
     var progressEl = document.getElementById('loader-progress');
-    var flashEl    = document.getElementById('loader-flash');
 
     // ── Camera path ───────────────────────────────
     // Fly through 72% of corridor normally, then RUSH the last 28%
@@ -242,12 +231,6 @@
         portalLight.intensity = rushT * rushT * 22;
         mPortal.opacity       = rushT * rushT * 0.9;
         ambientLight.intensity = 2.4 + rushT * rushT * 18;
-      }
-
-      // ── Flash overlay: white fills screen near end ──
-      if (raw > 0.88 && flashEl) {
-        var ft = (raw - 0.88) / 0.12;
-        flashEl.style.opacity = (ft * ft).toFixed(3);
       }
 
       updateCards(raw);
