@@ -17,22 +17,30 @@
       running = false;
       document.body.style.overflow = '';
 
-      if (skipMode) {
-        // Quick fade out for skip
-        loader.style.transition = 'opacity 0.3s ease';
-        loader.style.opacity = '0';
-        setTimeout(function () {
-          loader.style.display = 'none';
-          if (renderer) renderer.dispose();
-        }, 320);
-      } else {
-        // Punch-out: loader scales up and fades — feels like rushing into it
-        loader.classList.add('punch-out');
-        setTimeout(function () {
-          loader.style.display = 'none';
-          if (renderer) renderer.dispose();
-        }, 560);
+      var wrap = document.getElementById('page-wrap');
+      var fadeMs = skipMode ? 200 : 280;
+
+      // Pre-scale page to slightly small (invisible behind loader)
+      if (wrap) {
+        wrap.style.transition = 'none';
+        wrap.style.transform = 'scale(0.9)';
       }
+
+      // Fade out the loader
+      loader.style.transition = 'opacity ' + (fadeMs / 1000) + 's ease';
+      loader.style.opacity = '0';
+
+      setTimeout(function () {
+        loader.style.display = 'none';
+        if (renderer) renderer.dispose();
+        // Trigger page zoom-in on next paint
+        requestAnimationFrame(function () {
+          if (wrap) {
+            wrap.style.transition = 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)';
+            wrap.style.transform = 'scale(1)';
+          }
+        });
+      }, fadeMs + 20);
     }
 
     var running = true;
@@ -128,11 +136,6 @@
     ceil.position.set(0, 2.85, -60);
     scene.add(ceil);
 
-    // Floor grid for depth cue
-    var grid = new THREE.GridHelper(8, 32, 0x0c2260, 0x08101e);
-    grid.position.set(0, 0.005, -60);
-    scene.add(grid);
-
     // ── End-wall portal (camera punches through this) ──
     var PORTAL_Z = -(RACKS * SPACING) - 2;
     var gPortal  = new THREE.PlaneGeometry(5, 3.2);
@@ -199,10 +202,9 @@
       // ── Split easing: cruise then rush ───────────
       var p;
       if (raw <= RUSH_START) {
-        // Ease-in-out cubic across cruise phase → maps to 0–0.72 of path
+        // Ease-in quad across cruise phase — always accelerating, no mid-slowdown
         var r = raw / RUSH_START;
-        var eased = r < 0.5 ? 4*r*r*r : 1 - Math.pow(-2*r+2, 3)/2;
-        p = eased * 0.72;
+        p = (r * r) * 0.72;
       } else {
         // Cubic ease-in (accelerates hard) for the rush
         var r = (raw - RUSH_START) / (1 - RUSH_START);

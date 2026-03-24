@@ -113,13 +113,9 @@
 }
 @keyframes hint-fade-in { to { opacity: 1; } }
 
-/* Punch-out: loader scales up and fades as it reveals the page beneath */
-#site-loader.punch-out {
-  transform: scale(1.5);
-  opacity: 0;
-  transition: transform 0.55s cubic-bezier(0.4, 0, 1, 1),
-              opacity 0.45s ease;
-  pointer-events: none;
+/* Page reveal: content starts slightly small then zooms to full scale */
+#page-wrap {
+  transform-origin: center top;
 }
 
 /* ════════════════════════════════════════════
