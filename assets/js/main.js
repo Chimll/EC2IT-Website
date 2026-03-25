@@ -136,26 +136,34 @@
     ceil.position.set(0, 2.85, -85);
     scene.add(ceil);
 
-    // ── Deep-database marker: blue light cluster at the far end ──
-    // Camera flies toward this — the corridor appears to go on forever into blue haze
+    // ── End-wall server bank: camera crashes INTO these ──
+    // Camera destination sits just inside this rack cluster
     var PORTAL_Z = -(RACKS * SPACING) - 2;
 
-    // A bank of tight blue server LEDs at the end wall for visual depth
-    var gEndPanel = new THREE.BoxGeometry(3.8, 2.6, 0.05);
-    var mEndPanel = new THREE.MeshBasicMaterial({ color: 0x001133 });
-    var endPanel  = new THREE.Mesh(gEndPanel, mEndPanel);
-    endPanel.position.set(0, 1.4, PORTAL_Z);
-    scene.add(endPanel);
+    // Cross-corridor wall of racks — fills the full width so camera flies into them
+    var ewZ = PORTAL_Z + 1.2;
+    makeRack(-3.30, ewZ);
+    makeRack(-2.15, ewZ);
+    makeRack(-1.00, ewZ);
+    makeRack( 1.00, ewZ);
+    makeRack( 2.15, ewZ);
+    makeRack( 3.30, ewZ);
+    // Second layer slightly behind for depth (visible as camera rushes in)
+    makeRack(-2.80, ewZ - SPACING * 0.6);
+    makeRack(-1.55, ewZ - SPACING * 0.6);
+    makeRack( 0,    ewZ - SPACING * 0.6);
+    makeRack( 1.55, ewZ - SPACING * 0.6);
+    makeRack( 2.80, ewZ - SPACING * 0.6);
 
     // Blue point light — glows subtly, intensifies as camera dives in
     var portalLight = new THREE.PointLight(0x0044ff, 0, 80);
-    portalLight.position.set(0, 1.55, PORTAL_Z + 4);
+    portalLight.position.set(0, 1.55, PORTAL_Z + 6);
     scene.add(portalLight);
 
-    // Extra corridor lights in the deep section for a "goes on forever" look
+    // Extra corridor lights in the deep section so it feels endless going in
     for (var d = 0; d < 6; d++) {
-      var dp = new THREE.PointLight(0x0033cc, 0.6, 12);
-      dp.position.set(0, 2.7, PORTAL_Z + d * SPACING * 1.8);
+      var dp = new THREE.PointLight(0x0033cc, 0.7, 14);
+      dp.position.set(0, 2.7, PORTAL_Z + d * SPACING * 1.6);
       scene.add(dp);
     }
 
@@ -183,10 +191,50 @@
       [0.75, 0.88]
     ];
 
+    // ── Minimalist card sounds via Web Audio synthesis ──────────────
+    var audioCtx = null;
+    var cardPlayed = [false, false, false, false];
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+      }
+      return audioCtx;
+    }
+
+    function playCardSound(idx) {
+      var ctx = getAudioCtx();
+      if (!ctx || ctx.state === 'suspended') return;
+      // Ascending triangle-wave tones: clean, minimal, electronic
+      var freqs = [280, 360, 480, 640];
+      var osc  = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freqs[idx] || 440, ctx.currentTime);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.10, ctx.currentTime + 0.018);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.45);
+    }
+
+    // Try to unlock audio on first user interaction (browser autoplay policy)
+    function unlockAudio() {
+      var ctx = getAudioCtx();
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+    }
+    loader.addEventListener('click',   unlockAudio, { once: true });
+    document.addEventListener('keydown', unlockAudio, { once: true });
+    // Kick it immediately — works if page was opened by a user gesture (e.g. link click)
+    getAudioCtx();
+
     function updateCards(raw) {
       for (var c = 0; c < CARDS.length; c++) {
         if (!CARDS[c]) continue;
         var on = raw >= BEATS[c][0] && raw < BEATS[c][1];
+        if (on && !cardPlayed[c]) { cardPlayed[c] = true; playCardSound(c); }
         if (on) CARDS[c].classList.add('lt-visible');
         else    CARDS[c].classList.remove('lt-visible');
       }
@@ -249,7 +297,7 @@
 
     // ── Skip handler ──────────────────────────────
     function skip() { if (running) reveal(true); }
-    loader.addEventListener('click', skip);
+    loader.addEventListener('click', function() { unlockAudio(); skip(); });
     document.addEventListener('keydown', function onKey(e) {
       if (e.key !== 'F12') { skip(); document.removeEventListener('keydown', onKey); }
     });
