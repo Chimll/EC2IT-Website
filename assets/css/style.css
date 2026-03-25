@@ -407,9 +407,17 @@ h2 em { font-style: normal; color: var(--accent); }
   position: relative;
   overflow: hidden;
 }
-/* Keep text/panel above the ambulance */
+/* Network map canvas — sits behind everything in hero */
+#network-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Keep text/panel above canvas and ambulance */
 .hero-inner,
-.promise-panel { position: relative; z-index: 1; }
+.promise-panel { position: relative; z-index: 2; }
 
 /* ── IT AMBULANCE ───────────────────────── */
 .hero-ambulance {
@@ -418,37 +426,59 @@ h2 em { font-style: normal; color: var(--accent); }
   left: 0;
   width: 100%;
   pointer-events: none;
-  z-index: 0;
+  z-index: 1;  /* above network, below text */
 }
 .ambulance-svg {
   display: block;
-  width: 210px;
+  width: 270px;   /* bigger */
   height: auto;
-  opacity: 0.44;
-  animation: amb-drive 11s linear infinite;
+  opacity: 0.48;
+  animation: amb-drive 13s ease-in-out infinite;
 }
-[data-theme="dark"] .ambulance-svg { opacity: 0.26; }
+[data-theme="dark"] .ambulance-svg { opacity: 0.30; }
 
+/* Acceleration burst then coast to slow exit */
 @keyframes amb-drive {
-  0%   { transform: translateX(-240px); }
-  80%  { transform: translateX(calc(100vw + 240px)); }
-  100% { transform: translateX(calc(100vw + 240px)); } /* brief pause off-screen */
+  0% {
+    transform: translateX(-310px);
+    animation-timing-function: cubic-bezier(0.8, 0, 0.3, 1); /* sharp launch */
+  }
+  22% {
+    transform: translateX(44vw);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.8, 1); /* ease into slow glide */
+  }
+  100% { transform: translateX(calc(100vw + 310px)); }
 }
 
-/* Beacon: left and right lights alternate */
-.amb-beacon-l { animation: amb-fl 0.55s ease-in-out infinite; }
-.amb-beacon-r { animation: amb-fr 0.55s ease-in-out infinite; }
+/* Smoke puffs — grey circles that rise and fade at the exhaust */
+.smoke-puff {
+  animation: smoke-rise 1.5s ease-out infinite;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+.smoke-puff:nth-child(1) { animation-delay: 0s;    animation-duration: 1.4s; }
+.smoke-puff:nth-child(2) { animation-delay: 0.45s; animation-duration: 1.6s; }
+.smoke-puff:nth-child(3) { animation-delay: 0.9s;  animation-duration: 1.3s; }
+@keyframes smoke-rise {
+  0%   { transform: translateY(0)     scale(0.6); opacity: 0.55; }
+  50%  { transform: translateY(-10px) scale(1.3); opacity: 0.28; }
+  100% { transform: translateY(-22px) scale(2.0); opacity: 0;    }
+}
+
+/* Monochrome beacon: grey flashes */
+.amb-beacon-l { animation: amb-fl 0.5s ease-in-out infinite; }
+.amb-beacon-r { animation: amb-fr 0.5s ease-in-out infinite; }
 @keyframes amb-fl {
-  0%, 49%   { opacity: 1; }
+  0%, 49%   { opacity: 1;   }
   50%, 100% { opacity: 0.1; }
 }
 @keyframes amb-fr {
   0%, 49%   { opacity: 0.1; }
-  50%, 100% { opacity: 1; }
+  50%, 100% { opacity: 1;   }
 }
 
 @media (max-width: 600px) {
-  .ambulance-svg { width: 150px; opacity: 0.32; }
+  .ambulance-svg { width: 190px; opacity: 0.35; }
 }
 
 .hero-inner { }
