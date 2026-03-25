@@ -404,7 +404,53 @@ h2 em { font-style: normal; color: var(--accent); }
   padding: 9rem 7% 6rem;
   border-bottom: 1px solid var(--border);
   align-items: center;
+  position: relative;
+  overflow: hidden;
 }
+/* Keep text/panel above the ambulance */
+.hero-inner,
+.promise-panel { position: relative; z-index: 1; }
+
+/* ── IT AMBULANCE ───────────────────────── */
+.hero-ambulance {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+.ambulance-svg {
+  display: block;
+  width: 210px;
+  height: auto;
+  opacity: 0.44;
+  animation: amb-drive 11s linear infinite;
+}
+[data-theme="dark"] .ambulance-svg { opacity: 0.26; }
+
+@keyframes amb-drive {
+  0%   { transform: translateX(-240px); }
+  80%  { transform: translateX(calc(100vw + 240px)); }
+  100% { transform: translateX(calc(100vw + 240px)); } /* brief pause off-screen */
+}
+
+/* Beacon: left and right lights alternate */
+.amb-beacon-l { animation: amb-fl 0.55s ease-in-out infinite; }
+.amb-beacon-r { animation: amb-fr 0.55s ease-in-out infinite; }
+@keyframes amb-fl {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0.1; }
+}
+@keyframes amb-fr {
+  0%, 49%   { opacity: 0.1; }
+  50%, 100% { opacity: 1; }
+}
+
+@media (max-width: 600px) {
+  .ambulance-svg { width: 150px; opacity: 0.32; }
+}
+
 .hero-inner { }
 .hero-eyebrow {
   font-size: 0.78rem; font-weight: 500; color: var(--sub);
