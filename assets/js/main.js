@@ -772,9 +772,35 @@
           var spd = Math.sqrt(n.vx*n.vx + n.vy*n.vy);
           if (spd > 1.3) { n.vx *= 1.3/spd; n.vy *= 1.3/spd; }
         }
+        // Gentle drag so scattered nodes settle back naturally
+        n.vx *= 0.988; n.vy *= 0.988;
         n.x += n.vx; n.y += n.vy;
         if (n.x < 10 || n.x > W-10) n.vx *= -1;
         if (n.y < 10 || n.y > H-10) n.vy *= -1;
+      }
+
+      // ── Ambulance repulsion: nodes scatter as vehicle passes through ──
+      var ambEl = document.querySelector('.ambulance-svg');
+      if (ambEl) {
+        var ambR  = ambEl.getBoundingClientRect();
+        var cvR   = canvas.getBoundingClientRect();
+        var ambCX = ambR.left - cvR.left + ambR.width  * 0.5;
+        var ambCY = ambR.top  - cvR.top  + ambR.height * 0.5;
+        var ambRad = ambR.width * 0.7;   // repulsion bubble around vehicle
+        for (var i = 0; i < N; i++) {
+          var n  = nodes[i];
+          var ry = n.y - scrollOff * n.pf;
+          var dx = n.x  - ambCX;
+          var dy = ry   - ambCY;
+          var d  = Math.sqrt(dx*dx + dy*dy);
+          if (d < ambRad && d > 0) {
+            var f = ((ambRad - d) / ambRad) * 1.6;
+            n.vx += (dx / d) * f * 0.055;
+            n.vy += (dy / d) * f * 0.055;
+            var spd = Math.sqrt(n.vx*n.vx + n.vy*n.vy);
+            if (spd > 3.2) { n.vx *= 3.2/spd; n.vy *= 3.2/spd; }
+          }
+        }
       }
 
       // Draw edges
