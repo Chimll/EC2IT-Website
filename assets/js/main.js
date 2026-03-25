@@ -70,9 +70,9 @@
 
     var scene = new THREE.Scene();
     scene.background = new THREE.Color(0x020408);
-    scene.fog = new THREE.FogExp2(0x020408, 0.026);
+    scene.fog = new THREE.FogExp2(0x020408, 0.015);  // lighter fog — more racks visible ahead
 
-    var camera = new THREE.PerspectiveCamera(62, W / H, 0.1, 140);
+    var camera = new THREE.PerspectiveCamera(62, W / H, 0.1, 200);
     camera.position.set(0, 1.55, 5);
 
     // ── Materials ────────────────────────────────
@@ -88,8 +88,8 @@
     var gBody  = new THREE.BoxGeometry(0.9, 2.2, 0.58);
     var gDoor  = new THREE.BoxGeometry(0.82, 2.1, 0.04);
     var gLed   = new THREE.BoxGeometry(0.52, 0.018, 0.01);
-    var gFloor = new THREE.PlaneGeometry(8, 200);
-    var gCeil  = new THREE.PlaneGeometry(8, 200);
+    var gFloor = new THREE.PlaneGeometry(8, 280);
+    var gCeil  = new THREE.PlaneGeometry(8, 280);
 
     // ── Build a rack unit ─────────────────────────
     function makeRack(x, z) {
@@ -117,7 +117,7 @@
     }
 
     // ── Populate corridor ─────────────────────────
-    var RACKS   = 36;
+    var RACKS   = 52;   // deeper corridor — camera flies further into the database
     var SPACING = 2.75;
     for (var i = 0; i < RACKS; i++) {
       var rz = -(i * SPACING) - 3;
@@ -128,31 +128,41 @@
     // ── Floor & ceiling ───────────────────────────
     var floor = new THREE.Mesh(gFloor, mFloor);
     floor.rotation.x = -Math.PI / 2;
-    floor.position.set(0, 0, -60);
+    floor.position.set(0, 0, -85);
     scene.add(floor);
 
     var ceil = new THREE.Mesh(gCeil, mFloor);
     ceil.rotation.x = Math.PI / 2;
-    ceil.position.set(0, 2.85, -60);
+    ceil.position.set(0, 2.85, -85);
     scene.add(ceil);
 
-    // ── End-wall portal (camera punches through this) ──
+    // ── Deep-database marker: blue light cluster at the far end ──
+    // Camera flies toward this — the corridor appears to go on forever into blue haze
     var PORTAL_Z = -(RACKS * SPACING) - 2;
-    var gPortal  = new THREE.PlaneGeometry(5, 3.2);
-    var mPortal  = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 });
-    var portalMesh = new THREE.Mesh(gPortal, mPortal);
-    portalMesh.position.set(0, 1.55, PORTAL_Z);
-    scene.add(portalMesh);
 
-    // Portal point light — dark at first, blazes white during rush
-    var portalLight = new THREE.PointLight(0xffffff, 0, 50);
-    portalLight.position.set(0, 1.55, PORTAL_Z + 3);
+    // A bank of tight blue server LEDs at the end wall for visual depth
+    var gEndPanel = new THREE.BoxGeometry(3.8, 2.6, 0.05);
+    var mEndPanel = new THREE.MeshBasicMaterial({ color: 0x001133 });
+    var endPanel  = new THREE.Mesh(gEndPanel, mEndPanel);
+    endPanel.position.set(0, 1.4, PORTAL_Z);
+    scene.add(endPanel);
+
+    // Blue point light — glows subtly, intensifies as camera dives in
+    var portalLight = new THREE.PointLight(0x0044ff, 0, 80);
+    portalLight.position.set(0, 1.55, PORTAL_Z + 4);
     scene.add(portalLight);
+
+    // Extra corridor lights in the deep section for a "goes on forever" look
+    for (var d = 0; d < 6; d++) {
+      var dp = new THREE.PointLight(0x0033cc, 0.6, 12);
+      dp.position.set(0, 2.7, PORTAL_Z + d * SPACING * 1.8);
+      scene.add(dp);
+    }
 
     // ── Ambient + corridor lights ─────────────────
     var ambientLight = new THREE.AmbientLight(0x0a1535, 2.4);
     scene.add(ambientLight);
-    for (var p = 0; p < 14; p++) {
+    for (var p = 0; p < 22; p++) {   // more lights for the extended corridor
       var pt = new THREE.PointLight(0x0055dd, 1.0, 14);
       pt.position.set(0, 2.7, -(p * 7) - 4);
       scene.add(pt);
@@ -186,9 +196,8 @@
 
     // ── Camera path ───────────────────────────────
     // Fly through 72% of corridor normally, then RUSH the last 28%
-    var START_Z   =  5;
-    var CRUISE_Z  = -(RACKS * SPACING * 0.60);  // end of cruise phase
-    var DURATION  = 7000; // ms total
+    var START_Z  =  5;
+    var DURATION = 7000; // ms total
     var RUSH_START = 0.78; // raw progress where rush begins
     var t0 = null;
 
@@ -199,17 +208,10 @@
       var elapsed = ts - t0;
       var raw     = Math.min(elapsed / DURATION, 1);
 
-      // ── Split easing: cruise then rush ───────────
-      var p;
-      if (raw <= RUSH_START) {
-        // Ease-in quad across cruise phase — always accelerating, no mid-slowdown
-        var r = raw / RUSH_START;
-        p = (r * r) * 0.72;
-      } else {
-        // Cubic ease-in (accelerates hard) for the rush
-        var r = (raw - RUSH_START) / (1 - RUSH_START);
-        p = 0.72 + (r * r * r) * 0.28;
-      }
+      // Single continuous ease-in — no split, no velocity discontinuity.
+      // raw^2.4 means the camera always accelerates; the final 20% of time
+      // covers ~40% of the corridor, giving a genuine rush without any pause.
+      var p = Math.pow(raw, 2.4);
 
       // Camera position
       camera.position.z = START_Z + (PORTAL_Z - START_Z) * p;
@@ -227,12 +229,11 @@
         camera.position.z - Math.max(4, lookDist)
       );
 
-      // ── Portal blaze: ramp up white glow during rush ──
+      // ── Database depth glow: blue light intensifies as camera dives deeper ──
       if (raw > RUSH_START) {
         var rushT = (raw - RUSH_START) / (1 - RUSH_START); // 0→1
-        portalLight.intensity = rushT * rushT * 22;
-        mPortal.opacity       = rushT * rushT * 0.9;
-        ambientLight.intensity = 2.4 + rushT * rushT * 18;
+        portalLight.intensity  = rushT * rushT * 6;   // subtle blue bloom, not white
+        ambientLight.intensity = 2.4 + rushT * 3.5;  // gentle brightening only
       }
 
       updateCards(raw);
