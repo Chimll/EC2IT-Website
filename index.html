@@ -204,21 +204,26 @@
     <div class="hero-ambulance" aria-hidden="true">
       <svg class="ambulance-svg" viewBox="-14 0 248 90" xmlns="http://www.w3.org/2000/svg">
 
-        <!-- ── Exhaust smoke (SVG native animate — no CSS class needed) ── -->
-        <circle cx="7" cy="62" r="3" fill="#c0c0c0" opacity="0">
-          <animate attributeName="cy"      values="62;42"     dur="1.4s" begin="0s"    repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.55;0"    dur="1.4s" begin="0s"    repeatCount="indefinite"/>
-          <animate attributeName="r"       values="2.5;6.5"   dur="1.4s" begin="0s"    repeatCount="indefinite"/>
+        <!-- ── Exhaust smoke — bigger, slower, more visible ── -->
+        <circle cx="7" cy="62" r="4" fill="#cccccc" opacity="0">
+          <animate attributeName="cy"      values="62;34"    dur="2.0s" begin="0s"    repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.80;0"   dur="2.0s" begin="0s"    repeatCount="indefinite"/>
+          <animate attributeName="r"       values="4;13"     dur="2.0s" begin="0s"    repeatCount="indefinite"/>
         </circle>
-        <circle cx="3" cy="62" r="2.8" fill="#b8b8b8" opacity="0">
-          <animate attributeName="cy"      values="62;44"     dur="1.6s" begin="0.48s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.5;0"     dur="1.6s" begin="0.48s" repeatCount="indefinite"/>
-          <animate attributeName="r"       values="2;6"       dur="1.6s" begin="0.48s" repeatCount="indefinite"/>
+        <circle cx="2" cy="62" r="3.5" fill="#bbbbbb" opacity="0">
+          <animate attributeName="cy"      values="62;36"    dur="2.2s" begin="0.5s"  repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.72;0"   dur="2.2s" begin="0.5s"  repeatCount="indefinite"/>
+          <animate attributeName="r"       values="3;11"     dur="2.2s" begin="0.5s"  repeatCount="indefinite"/>
         </circle>
-        <circle cx="11" cy="62" r="2.4" fill="#d0d0d0" opacity="0">
-          <animate attributeName="cy"      values="62;46"     dur="1.3s" begin="0.96s" repeatCount="indefinite"/>
-          <animate attributeName="opacity" values="0.45;0"    dur="1.3s" begin="0.96s" repeatCount="indefinite"/>
-          <animate attributeName="r"       values="1.8;5.5"   dur="1.3s" begin="0.96s" repeatCount="indefinite"/>
+        <circle cx="12" cy="62" r="3" fill="#d8d8d8" opacity="0">
+          <animate attributeName="cy"      values="62;38"    dur="1.8s" begin="1.0s"  repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.65;0"   dur="1.8s" begin="1.0s"  repeatCount="indefinite"/>
+          <animate attributeName="r"       values="2.5;10"   dur="1.8s" begin="1.0s"  repeatCount="indefinite"/>
+        </circle>
+        <circle cx="5" cy="62" r="3.2" fill="#c8c8c8" opacity="0">
+          <animate attributeName="cy"      values="62;40"    dur="2.1s" begin="1.5s"  repeatCount="indefinite"/>
+          <animate attributeName="opacity" values="0.60;0"   dur="2.1s" begin="1.5s"  repeatCount="indefinite"/>
+          <animate attributeName="r"       values="2.8;9"    dur="2.1s" begin="1.5s"  repeatCount="indefinite"/>
         </circle>
 
         <!-- ── Ground shadow ── -->
@@ -227,58 +232,51 @@
         <!-- ── Patient compartment — TALL boxy rear section ── -->
         <rect x="5" y="5" width="148" height="57" rx="4" fill="#f3f3f5" stroke="#c8c8c8" stroke-width="1"/>
 
-        <!-- Pinstripe across patient section -->
-        <rect x="5" y="38" width="148" height="5"   fill="#1a1a1a" opacity="0.06"/>
-        <rect x="5" y="36" width="148" height="1.5" fill="#1a1a1a" opacity="0.09"/>
+        <!-- EC2IT blue accent stripe -->
+        <rect x="5" y="37" width="148" height="7" fill="#0057ff" opacity="0.18"/>
+        <rect x="5" y="35" width="148" height="1.5" fill="#0057ff" opacity="0.25"/>
 
-        <!-- Side window on patient compartment -->
-        <rect x="96" y="10" width="44" height="24" rx="2" fill="#d0d4de" stroke="#bbb" stroke-width="0.8" opacity="0.8"/>
+        <!-- Side window — blue tinted -->
+        <rect x="96" y="10" width="44" height="24" rx="2" fill="#b8cef0" stroke="#90a8d8" stroke-width="0.8" opacity="0.75"/>
 
         <!-- ── Sloped step: body roof drops down to cab roof ── -->
-        <!-- This right-triangle creates the characteristic ambulance silhouette -->
-        <path d="M 153,5 L 172,22 L 153,22 Z" fill="#e6e6e8" stroke="#c8c8c8" stroke-width="1"/>
+        <path d="M 153,5 L 172,22 L 153,22 Z" fill="#e4e8f4" stroke="#c8c8c8" stroke-width="1"/>
 
         <!-- ── Cab section — LOWER, set back from body ── -->
-        <rect x="153" y="22" width="68" height="40" rx="3" fill="#ebebed" stroke="#c8c8c8" stroke-width="1"/>
+        <rect x="153" y="22" width="68" height="40" rx="3" fill="#eaecf4" stroke="#c8c8c8" stroke-width="1"/>
 
-        <!-- Angled windshield (tinted, slopes backward at top) -->
-        <path d="M 153,22 L 210,22 L 217,35 L 153,35 Z" fill="#c0c6d4" opacity="0.7"/>
+        <!-- Angled windshield — EC2IT blue tint -->
+        <path d="M 153,22 L 210,22 L 217,35 L 153,35 Z" fill="#7aaaf0" opacity="0.45"/>
 
-        <!-- IT cross — vertical bar -->
-        <rect x="18" y="12" width="5"  height="20" rx="1.5" fill="#222"/>
-        <!-- IT cross — horizontal bar -->
-        <rect x="13" y="19" width="15" height="6"  rx="1.5" fill="#222"/>
+        <!-- IT cross — EC2IT blue -->
+        <rect x="18" y="12" width="5"  height="20" rx="1.5" fill="#0057ff"/>
+        <rect x="13" y="19" width="15" height="6"  rx="1.5" fill="#0057ff"/>
 
-        <!-- FAST RESPONSE label -->
-        <text x="38" y="25" font-size="7" font-family="system-ui,-apple-system,sans-serif" font-weight="800" fill="#1a1a1a" letter-spacing="1.5">FAST RESPONSE</text>
-        <text x="38" y="37" font-size="5.5" font-family="system-ui,-apple-system,sans-serif" fill="#777" letter-spacing="1">24/7  IT  SUPPORT</text>
+        <!-- FAST RESPONSE — EC2IT blue -->
+        <text x="38" y="25" font-size="7" font-family="system-ui,-apple-system,sans-serif" font-weight="800" fill="#0057ff" letter-spacing="1.5">FAST RESPONSE</text>
+        <text x="38" y="37" font-size="5.5" font-family="system-ui,-apple-system,sans-serif" fill="#5570a0" letter-spacing="1">24/7  IT  SUPPORT</text>
 
         <!-- ── Lights ── -->
-        <!-- Rear light strip -->
         <rect x="4"   y="22" width="3" height="16" rx="1" fill="#555"/>
-        <!-- Front headlight -->
-        <rect x="219" y="28" width="5" height="9"  rx="1" fill="#e0e0e0"/>
-        <!-- Front fog/indicator -->
-        <rect x="219" y="39" width="5" height="7"  rx="1" fill="#c8c8c8"/>
+        <rect x="219" y="28" width="5" height="9"  rx="1" fill="#e8e8e8"/>
+        <rect x="219" y="39" width="5" height="7"  rx="1" fill="#cccccc"/>
 
         <!-- ── Bumpers ── -->
         <rect x="2"   y="59" width="8" height="5" rx="1.5" fill="#999"/>
         <rect x="217" y="59" width="8" height="5" rx="1.5" fill="#999"/>
 
-        <!-- ── Wheels — larger diameter, proper ambulance proportions ── -->
-        <!-- Rear (under patient compartment) -->
+        <!-- ── Wheels ── -->
         <circle cx="38"  cy="71" r="15" fill="#1a1a1a"/>
         <circle cx="38"  cy="71" r="5.5" fill="#3d3d3d"/>
         <circle cx="38"  cy="71" r="2"   fill="#1a1a1a"/>
-        <!-- Front (under cab) -->
         <circle cx="192" cy="71" r="14" fill="#1a1a1a"/>
         <circle cx="192" cy="71" r="5"   fill="#3d3d3d"/>
         <circle cx="192" cy="71" r="1.8" fill="#1a1a1a"/>
 
-        <!-- ── Beacon on patient compartment roof ── -->
-        <rect x="50" y="0" width="46" height="6" rx="3" fill="#2a2a2a"/>
-        <rect class="amb-beacon-l" x="53" y="1.5" width="18" height="3" rx="1.5" fill="#888"/>
-        <rect class="amb-beacon-r" x="74" y="1.5" width="18" height="3" rx="1.5" fill="#aaa"/>
+        <!-- ── Beacon — EC2IT blue flashing ── -->
+        <rect x="50" y="0" width="46" height="6" rx="3" fill="#0a1535"/>
+        <rect class="amb-beacon-l" x="53" y="1.5" width="18" height="3" rx="1.5" fill="#0057ff"/>
+        <rect class="amb-beacon-r" x="74" y="1.5" width="18" height="3" rx="1.5" fill="#4d8aff"/>
 
       </svg>
     </div>
