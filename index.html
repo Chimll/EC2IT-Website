@@ -195,7 +195,12 @@
 
     <!-- IT Ambulance — Mercedes Sprinter profile: tall body, stepped-down cab -->
     <div class="hero-ambulance amb-slow" aria-hidden="true">
-      <svg class="ambulance-svg" viewBox="-15 0 255 92" xmlns="http://www.w3.org/2000/svg">
+      <!-- .amb-vehicle wraps badge + SVG so they move as one unit -->
+      <div class="amb-vehicle">
+        <div class="amb-alert-badge">
+          <span class="amb-badge-excl">!</span> New Ticket
+        </div>
+      <svg class="ambulance-svg" viewBox="-15 0 270 96" xmlns="http://www.w3.org/2000/svg">
 
         <!-- ── Idle smoke: 2 small wispy puffs ── -->
         <g class="amb-smoke-light">
@@ -339,7 +344,8 @@
         <circle cx="193" cy="78" r="3" fill="#3c3c3e"/>
 
       </svg>
-    </div>
+      </div><!-- /.amb-vehicle -->
+    </div><!-- /.hero-ambulance -->
 
   </section>
 

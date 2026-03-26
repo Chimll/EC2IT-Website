@@ -38,6 +38,13 @@
           if (wrap) {
             wrap.style.transition = 'transform 0.55s cubic-bezier(0.16, 1, 0.3, 1)';
             wrap.style.transform = 'scale(1)';
+            // CRITICAL: remove the inline transform once animation finishes.
+            // A transform on any ancestor breaks position:fixed descendants
+            // (they become fixed relative to that ancestor, not the viewport).
+            setTimeout(function () {
+              wrap.style.transition = '';
+              wrap.style.transform  = '';
+            }, 620);
           }
         });
       }, fadeMs + 20);
@@ -857,15 +864,16 @@
   /* ── Ambulance: phased rAF animation (slow → alert strobe → fast) ── */
   function initAmbulance() {
     var wrapper = document.querySelector('.hero-ambulance');
+    var vehicle = document.querySelector('.amb-vehicle');   // inner wrapper (moves as one unit)
     var ambEl   = document.querySelector('.ambulance-svg');
-    if (!wrapper || !ambEl) return;
+    var badge   = document.querySelector('.amb-alert-badge');
+    if (!wrapper || !vehicle || !ambEl) return;
 
     var ambW      = 320;
     var x         = -(ambW + 30);
-    var lean      = 0;
-    var speed     = 1.5;
-    var SLOW_V    = 1.5;
-    var FAST_V    = 9.0;
+    var speed     = 2.8;          // px/frame — noticeably brisker slow crawl
+    var SLOW_V    = 2.8;
+    var FAST_V    = 13.0;         // full-throttle sprint
     var phase     = 'slow';
     var alertDone = false;
 
@@ -906,8 +914,7 @@
       var endX  = heroW + ambW + 30;
 
       if (phase === 'fast') {
-        speed = Math.min(speed + 0.13, FAST_V);
-        lean  = Math.min(lean  + 0.22, 6.5);
+        speed = Math.min(speed + 0.22, FAST_V);
       } else {
         speed = SLOW_V;
       }
@@ -920,13 +927,13 @@
 
       if (x > endX) {
         x         = -(ambW + 30);
-        lean      = 0;
         speed     = SLOW_V;
         alertDone = false;
         setPhase('slow');
       }
 
-      ambEl.style.transform = 'translateX(' + x + 'px) rotate(' + (-lean) + 'deg)';
+      // Move the whole vehicle wrapper (SVG + badge travel together)
+      vehicle.style.transform = 'translateX(' + x + 'px)';
       requestAnimationFrame(tick);
     }
 
