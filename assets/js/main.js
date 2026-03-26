@@ -3,6 +3,9 @@
 (function () {
   'use strict';
 
+  // Shared falling-ticket position read by the network map each frame
+  var sharedTicketX = -999, sharedTicketY = -999;
+
   /* ════════════════════════════════════════════
      1. 3D DATA CENTRE INTRO
   ════════════════════════════════════════════ */
@@ -810,6 +813,25 @@
         }
       }
 
+      // ── Ticket repulsion: nodes scatter as ticket passes through ──
+      if (sharedTicketX > -900) {
+        var tkRad = 70;
+        for (var i = 0; i < N; i++) {
+          var n  = nodes[i];
+          var ry = n.y - scrollOff * n.pf;
+          var dx = n.x - sharedTicketX;
+          var dy = ry  - sharedTicketY;
+          var d  = Math.sqrt(dx*dx + dy*dy);
+          if (d < tkRad && d > 0) {
+            var f = ((tkRad - d) / tkRad) * 1.1;
+            n.vx += (dx / d) * f * 0.05;
+            n.vy += (dy / d) * f * 0.05;
+            var spd = Math.sqrt(n.vx*n.vx + n.vy*n.vy);
+            if (spd > 2.8) { n.vx *= 2.8/spd; n.vy *= 2.8/spd; }
+          }
+        }
+      }
+
       // Draw edges
       for (var i = 0; i < N; i++) {
         var ni  = nodes[i];
@@ -861,22 +883,40 @@
     requestAnimationFrame(draw);
   }
 
-  /* ── Ambulance: phased rAF animation (slow → alert strobe → fast) ── */
+  /* ════════════════════════════════════════════
+     AMBULANCE + FALLING TICKET physics
+  ════════════════════════════════════════════ */
   function initAmbulance() {
-    var wrapper = document.querySelector('.hero-ambulance');
-    var vehicle = document.querySelector('.amb-vehicle');   // inner wrapper (moves as one unit)
-    var ambEl   = document.querySelector('.ambulance-svg');
-    var badge   = document.querySelector('.amb-alert-badge');
-    if (!wrapper || !vehicle || !ambEl) return;
+    var wrapper  = document.querySelector('.hero-ambulance');
+    var vehicle  = document.querySelector('.amb-vehicle');
+    var ambEl    = document.querySelector('.ambulance-svg');
+    var heroEl   = document.getElementById('hero');
+    var ticketEl = document.getElementById('amb-ticket');
+    if (!wrapper || !vehicle || !ambEl || !heroEl) return;
 
+    /* ── Ambulance state ── */
     var ambW      = 320;
     var x         = -(ambW + 30);
-    var speed     = 2.8;          // px/frame — noticeably brisker slow crawl
+    var speed     = 2.8;
     var SLOW_V    = 2.8;
-    var FAST_V    = 13.0;         // full-throttle sprint
+    var FAST_V    = 13.0;
     var phase     = 'slow';
     var alertDone = false;
+    var alertTimer = null;
 
+    /* ── Ticket physics state ── */
+    var tk = { x: 0, y: -60, vx: 0, vy: 0, active: false, caught: false };
+    var mouseHX = -999, mouseHY = -999;
+
+    /* Track mouse in hero-relative coords for ticket repulsion */
+    heroEl.addEventListener('mousemove', function(e) {
+      var r = heroEl.getBoundingClientRect();
+      mouseHX = e.clientX - r.left;
+      mouseHY = e.clientY - r.top;
+    });
+    heroEl.addEventListener('mouseleave', function() { mouseHX = -999; mouseHY = -999; });
+
+    /* Beacon elements */
     var bL  = ambEl.querySelector('.amb-beacon-l');
     var bR  = ambEl.querySelector('.amb-beacon-r');
     var bM  = ambEl.querySelector('.amb-beacon-m');
@@ -888,7 +928,9 @@
     }
 
     function triggerAlert() {
+      if (alertDone) return;
       alertDone = true;
+      if (alertTimer) { clearTimeout(alertTimer); alertTimer = null; }
       setPhase('alert');
       var f = 0;
       var iv = setInterval(function() {
@@ -909,35 +951,160 @@
       }, 80);
     }
 
+    /* Spawn ticket from random position above hero */
+    function spawnTicket() {
+      if (!ticketEl) return;
+      var heroW = heroEl.offsetWidth;
+      // Random horizontal start, weighted toward centre so it's visible
+      tk.x   = heroW * 0.15 + Math.random() * heroW * 0.55;
+      tk.y   = -55;
+      tk.vx  = (Math.random() - 0.5) * 4.0;   // random sideways drift
+      tk.vy  = 1.0 + Math.random() * 1.2;      // downward
+      tk.active = true;
+      tk.caught = false;
+      ticketEl.style.left      = tk.x + 'px';
+      ticketEl.style.top       = tk.y + 'px';
+      ticketEl.style.display   = 'flex';
+      ticketEl.style.opacity   = '1';
+      ticketEl.style.transform = 'translate(-50%, -50%)';
+      ticketEl.style.transition = '';
+      // Fallback alert in case ticket never reaches ambulance
+      alertTimer = setTimeout(function() { if (!alertDone) triggerAlert(); }, 3200);
+    }
+
+    /* One physics step for the ticket */
+    function ticketTick() {
+      if (!tk.active || !ticketEl) { sharedTicketX = -999; sharedTicketY = -999; return; }
+
+      var heroW    = heroEl.offsetWidth;
+      var heroH    = heroEl.offsetHeight;
+      var heroRect = heroEl.getBoundingClientRect();
+
+      // Gravity + air drag
+      tk.vy += 0.14;
+      tk.vx *= 0.994;
+
+      // Mouse repulsion — bounces away from cursor
+      if (mouseHX > -900) {
+        var mdx = tk.x - mouseHX, mdy = tk.y - mouseHY;
+        var md  = Math.sqrt(mdx*mdx + mdy*mdy);
+        if (md < 85 && md > 1) {
+          var mf = (85 - md) / 85 * 0.55;
+          tk.vx += (mdx/md) * mf;
+          tk.vy += (mdy/md) * mf;
+        }
+      }
+
+      // Hero left/right wall bounces
+      if (tk.x < 12) { tk.vx =  Math.abs(tk.vx) * (0.65 + Math.random()*0.2); tk.x = 12; }
+      if (tk.x > heroW - 12) { tk.vx = -Math.abs(tk.vx) * (0.65 + Math.random()*0.2); tk.x = heroW - 12; }
+
+      // Promise panel bounce (fixed element — compare screen coords)
+      var panel = document.querySelector('.promise-panel');
+      if (panel) {
+        var pr  = panel.getBoundingClientRect();
+        var ptx = tk.x + heroRect.left;
+        var pty = tk.y + heroRect.top;
+        var pad = 14;
+        if (ptx > pr.left - pad && ptx < pr.right  + pad &&
+            pty > pr.top  - pad && pty < pr.bottom + pad) {
+          // Bounce off closest vertical edge
+          var dLeft  = Math.abs(ptx - pr.left);
+          var dRight = Math.abs(ptx - pr.right);
+          if (dLeft < dRight) {
+            tk.vx = -Math.abs(tk.vx) * (0.7 + Math.random()*0.2);
+            tk.x  = (pr.left - heroRect.left) - pad - 2;
+          } else {
+            tk.vx =  Math.abs(tk.vx) * (0.7 + Math.random()*0.2);
+            tk.x  = (pr.right - heroRect.left) + pad + 2;
+          }
+          tk.vy *= (0.75 + Math.random()*0.2);
+        }
+      }
+
+      // Speed cap
+      var spd = Math.sqrt(tk.vx*tk.vx + tk.vy*tk.vy);
+      if (spd > 12) { tk.vx *= 12/spd; tk.vy *= 12/spd; }
+
+      tk.x += tk.vx;
+      tk.y += tk.vy;
+
+      // Ambulance catch — ticket meets ambulance front zone
+      if (!tk.caught) {
+        var ar  = ambEl.getBoundingClientRect();
+        var tsx = tk.x + heroRect.left;
+        var tsy = tk.y + heroRect.top;
+        if (tsx > ar.left + 25 && tsx < ar.right  - 25 &&
+            tsy > ar.top  - 15 && tsy < ar.bottom +  5) {
+          tk.caught = true;
+          tk.active = false;
+          // Zoom-out + fade catch animation
+          ticketEl.style.transition = 'transform 0.38s ease, opacity 0.38s ease';
+          ticketEl.style.transform  = 'translate(-50%, -85%) scale(1.35)';
+          ticketEl.style.opacity    = '0';
+          setTimeout(function() {
+            ticketEl.style.display = 'none';
+            ticketEl.style.transform = 'translate(-50%, -50%)';
+            ticketEl.style.transition = '';
+          }, 420);
+          sharedTicketX = -999; sharedTicketY = -999;
+          triggerAlert();
+          return;
+        }
+      }
+
+      // Fell off bottom without being caught
+      if (tk.y > heroH + 40) {
+        tk.active = false;
+        ticketEl.style.display = 'none';
+        sharedTicketX = -999; sharedTicketY = -999;
+        triggerAlert();  // ambulance speeds off anyway
+        return;
+      }
+
+      // Share position with network map
+      sharedTicketX = tk.x;
+      sharedTicketY = tk.y;
+
+      // Update DOM
+      ticketEl.style.left = tk.x + 'px';
+      ticketEl.style.top  = tk.y + 'px';
+    }
+
+    /* Main animation loop */
     function tick() {
       var heroW = (wrapper.parentElement || document.body).offsetWidth;
       var endX  = heroW + ambW + 30;
 
-      if (phase === 'fast') {
-        speed = Math.min(speed + 0.22, FAST_V);
-      } else {
-        speed = SLOW_V;
-      }
+      // Accelerate once alert fires
+      speed = (phase === 'fast') ? Math.min(speed + 0.22, FAST_V) : SLOW_V;
 
       x += speed;
 
-      if (!alertDone && x > heroW * 0.18) {
-        triggerAlert();
-      }
+      // Run ticket physics every frame
+      ticketTick();
 
+      // Cycle reset
       if (x > endX) {
         x         = -(ambW + 30);
         speed     = SLOW_V;
         alertDone = false;
+        if (alertTimer) { clearTimeout(alertTimer); alertTimer = null; }
+        // Hide any lingering ticket
+        if (ticketEl) { ticketEl.style.display = 'none'; }
+        tk.active = false;
+        sharedTicketX = -999; sharedTicketY = -999;
         setPhase('slow');
+        // Spawn next ticket after a short pause
+        setTimeout(spawnTicket, 600);
       }
 
-      // Move the whole vehicle wrapper (SVG + badge travel together)
       vehicle.style.transform = 'translateX(' + x + 'px)';
       requestAnimationFrame(tick);
     }
 
     setPhase('slow');
+    setTimeout(spawnTicket, 800);  // first ticket appears shortly after load
     requestAnimationFrame(tick);
   }
 

@@ -193,13 +193,17 @@
     <!-- Network map canvas — animated node graph behind hero content -->
     <canvas id="network-canvas" aria-hidden="true"></canvas>
 
+    <!-- Falling ticket — JS positions this via physics; lives inside hero so overflow:hidden clips it -->
+    <div id="amb-ticket" aria-hidden="true">
+      <div class="atk-icon"></div>
+      <span class="atk-text">New Ticket</span>
+    </div>
+
+
     <!-- IT Ambulance — Mercedes Sprinter profile: tall body, stepped-down cab -->
     <div class="hero-ambulance amb-slow" aria-hidden="true">
-      <!-- .amb-vehicle wraps badge + SVG so they move as one unit -->
+      <!-- .amb-vehicle wraps SVG so it moves as one unit with JS -->
       <div class="amb-vehicle">
-        <div class="amb-alert-badge">
-          <span class="amb-badge-excl">!</span> New Ticket
-        </div>
       <svg class="ambulance-svg" viewBox="-15 0 270 96" xmlns="http://www.w3.org/2000/svg">
 
         <!-- ── Idle smoke: 2 small wispy puffs ── -->

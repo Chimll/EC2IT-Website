@@ -442,45 +442,56 @@ h2 em { font-style: normal; color: var(--accent); }
 }
 [data-theme="dark"] .ambulance-svg { opacity: 0.32; }
 
-/* "New Ticket" badge — pops above ambulance during alert phase */
-.amb-alert-badge {
+/* ── Falling ticket notification ─────────────────── */
+#amb-ticket {
   position: absolute;
-  bottom: calc(100% - 4px);
-  left: 42%;
-  transform: translateX(-50%) translateY(10px);
-  background: #ff3b30;
-  color: #fff;
+  display: none;           /* JS switches to flex when active */
+  align-items: center;
+  gap: 7px;
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(0,87,255,0.20);
+  border-radius: 12px;
+  padding: 6px 12px 6px 7px;
   font-size: 11px;
   font-weight: 700;
   font-family: system-ui, -apple-system, sans-serif;
-  padding: 5px 10px 5px 8px;
-  border-radius: 7px;
+  color: #0057ff;
   white-space: nowrap;
-  opacity: 0;
-  transition: opacity 0.15s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 6px 24px rgba(0,87,255,0.18), 0 2px 8px rgba(0,0,0,0.08);
   pointer-events: none;
-  letter-spacing: 0.4px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  box-shadow: 0 3px 12px rgba(255,59,48,0.4);
+  z-index: 5;
+  /* JS sets left/top; this keeps the origin at visual centre */
+  transform: translate(-50%, -50%);
+  letter-spacing: 0.3px;
+  will-change: left, top;
+  /* gentle float wobble while airborne */
+  animation: atk-wobble 1.8s ease-in-out infinite;
 }
-.amb-alert-badge::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 20px;
-  border: 5px solid transparent;
-  border-top-color: #ff3b30;
+@keyframes atk-wobble {
+  0%, 100% { rotate: -3deg; }
+  50%       { rotate:  3deg; }
 }
-.hero-ambulance.amb-alert .amb-alert-badge {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
+/* Cloud icon — solid circle with '!' */
+.atk-icon {
+  width: 18px; height: 18px;
+  background: #ff3b30;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
-.amb-badge-excl {
-  font-size: 13px;
+.atk-icon::after {
+  content: '!';
+  color: #fff;
+  font-size: 11px;
   font-weight: 900;
   line-height: 1;
+}
+[data-theme="dark"] #amb-ticket {
+  background: rgba(22,24,36,0.92);
+  border-color: rgba(77,138,255,0.3);
+  color: #4d8aff;
 }
 
 /* Smoke phase control — JS sets amb-slow/alert/fast class on .hero-ambulance */
