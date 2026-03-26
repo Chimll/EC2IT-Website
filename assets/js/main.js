@@ -854,6 +854,109 @@
     requestAnimationFrame(draw);
   }
 
+  /* ── Ambulance: phased rAF animation (slow → alert strobe → fast) ── */
+  function initAmbulance() {
+    var wrapper = document.querySelector('.hero-ambulance');
+    var ambEl   = document.querySelector('.ambulance-svg');
+    if (!wrapper || !ambEl) return;
+
+    var ambW      = 320;
+    var x         = -(ambW + 30);
+    var lean      = 0;
+    var speed     = 1.5;
+    var SLOW_V    = 1.5;
+    var FAST_V    = 9.0;
+    var phase     = 'slow';
+    var alertDone = false;
+
+    var bL  = ambEl.querySelector('.amb-beacon-l');
+    var bR  = ambEl.querySelector('.amb-beacon-r');
+    var bM  = ambEl.querySelector('.amb-beacon-m');
+    var bR2 = ambEl.querySelector('.amb-beacon-r2');
+
+    function setPhase(p) {
+      phase = p;
+      wrapper.className = 'hero-ambulance amb-' + p;
+    }
+
+    function triggerAlert() {
+      alertDone = true;
+      setPhase('alert');
+      var f = 0;
+      var iv = setInterval(function() {
+        f++;
+        var on = (f % 2 === 0);
+        if (bL)  { bL.setAttribute('fill',    on ? '#ffffff' : '#0057ff'); bL.setAttribute('opacity', on ? '1' : '0.08'); }
+        if (bR)  { bR.setAttribute('fill',    on ? '#ffffff' : '#4d8aff'); bR.setAttribute('opacity', on ? '1' : '0.08'); }
+        if (bM)  { bM.setAttribute('opacity', on ? '0.95' : '0.05'); }
+        if (bR2) { bR2.setAttribute('opacity', on ? '0.05' : '0.95'); }
+        if (f >= 14) {
+          clearInterval(iv);
+          if (bL)  { bL.setAttribute('fill', '#0057ff'); bL.setAttribute('opacity', '1'); }
+          if (bR)  { bR.setAttribute('fill', '#4d8aff'); bR.setAttribute('opacity', '1'); }
+          if (bM)  { bM.setAttribute('opacity', '0.25'); }
+          if (bR2) { bR2.setAttribute('opacity', '0.25'); }
+          setPhase('fast');
+        }
+      }, 80);
+    }
+
+    function tick() {
+      var heroW = (wrapper.parentElement || document.body).offsetWidth;
+      var endX  = heroW + ambW + 30;
+
+      if (phase === 'fast') {
+        speed = Math.min(speed + 0.13, FAST_V);
+        lean  = Math.min(lean  + 0.22, 6.5);
+      } else {
+        speed = SLOW_V;
+      }
+
+      x += speed;
+
+      if (!alertDone && x > heroW * 0.18) {
+        triggerAlert();
+      }
+
+      if (x > endX) {
+        x         = -(ambW + 30);
+        lean      = 0;
+        speed     = SLOW_V;
+        alertDone = false;
+        setPhase('slow');
+      }
+
+      ambEl.style.transform = 'translateX(' + x + 'px) rotate(' + (-lean) + 'deg)';
+      requestAnimationFrame(tick);
+    }
+
+    setPhase('slow');
+    requestAnimationFrame(tick);
+  }
+
+  /* ── Promise panel: mouse-tracked 3D tilt ── */
+  function init3DTilt() {
+    var panel = document.querySelector('.promise-panel');
+    if (!panel) return;
+    var BASE = 'translateY(-50%)';
+
+    panel.addEventListener('mousemove', function(e) {
+      var r = panel.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width  - 0.5;
+      var y = (e.clientY - r.top)  / r.height - 0.5;
+      panel.style.transition = 'transform 0.08s ease, box-shadow 0.08s ease';
+      panel.style.transform  = BASE + ' perspective(900px) rotateX(' + (-y * 16) + 'deg) rotateY(' + (x * 16) + 'deg) scale(1.025)';
+      var sx = -x * 14, sy = -y * 14 + 10;
+      panel.style.boxShadow  = sx + 'px ' + sy + 'px 50px rgba(0,0,0,0.14), 0 0 28px rgba(0,87,255,' + (0.06 + Math.abs(x) * 0.08) + ')';
+    });
+
+    panel.addEventListener('mouseleave', function() {
+      panel.style.transition = 'transform 0.55s cubic-bezier(0.16,1,0.3,1), box-shadow 0.55s ease';
+      panel.style.transform  = BASE;
+      panel.style.boxShadow  = '';
+    });
+  }
+
   /* ── Init all features ── */
   initPremiumLoader();
   initCounters();
@@ -861,5 +964,7 @@
   initThemeToggle();
   initPromiseCounters();
   initNetworkMap();
+  initAmbulance();
+  init3DTilt();
 
 })();
