@@ -530,6 +530,7 @@ h1 {
   color: var(--black); margin-bottom: 2rem;
 }
 h1 em { font-style: normal; color: var(--accent); }
+.h1-line { display: inline-block; }
 .hero-p {
   font-size: 1.05rem; color: var(--sub); line-height: 1.75;
   max-width: 420px; margin-bottom: 3rem; font-weight: 400;
