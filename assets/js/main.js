@@ -894,6 +894,9 @@
     var ticketEl = document.getElementById('amb-ticket');
     if (!wrapper || !vehicle || !ambEl || !heroEl) return;
 
+    var heroTitleEl    = document.querySelector('#hero h1');
+    var promisePanelEl = document.querySelector('.promise-panel');
+
     /* ── Ambulance state ── */
     var ambW      = 320;
     var x         = -(ambW + 30);
@@ -984,12 +987,12 @@
       tk.vy += 0.14;
       tk.vx *= 0.994;
 
-      // Mouse repulsion — bounces away from cursor
+      // Mouse repulsion — bounces away from cursor (stronger)
       if (mouseHX > -900) {
         var mdx = tk.x - mouseHX, mdy = tk.y - mouseHY;
         var md  = Math.sqrt(mdx*mdx + mdy*mdy);
-        if (md < 85 && md > 1) {
-          var mf = (85 - md) / 85 * 0.55;
+        if (md < 110 && md > 1) {
+          var mf = (110 - md) / 110 * 1.4;
           tk.vx += (mdx/md) * mf;
           tk.vy += (mdy/md) * mf;
         }
@@ -999,28 +1002,43 @@
       if (tk.x < 12) { tk.vx =  Math.abs(tk.vx) * (0.65 + Math.random()*0.2); tk.x = 12; }
       if (tk.x > heroW - 12) { tk.vx = -Math.abs(tk.vx) * (0.65 + Math.random()*0.2); tk.x = heroW - 12; }
 
-      // Promise panel bounce (fixed element — compare screen coords)
-      var panel = document.querySelector('.promise-panel');
-      if (panel) {
-        var pr  = panel.getBoundingClientRect();
+      // ── Helper: AABB bounce off a DOM element ──
+      function bounceOffRect(el) {
+        if (!el) return;
+        var r   = el.getBoundingClientRect();
         var ptx = tk.x + heroRect.left;
         var pty = tk.y + heroRect.top;
         var pad = 14;
-        if (ptx > pr.left - pad && ptx < pr.right  + pad &&
-            pty > pr.top  - pad && pty < pr.bottom + pad) {
-          // Bounce off closest vertical edge
-          var dLeft  = Math.abs(ptx - pr.left);
-          var dRight = Math.abs(ptx - pr.right);
-          if (dLeft < dRight) {
-            tk.vx = -Math.abs(tk.vx) * (0.7 + Math.random()*0.2);
-            tk.x  = (pr.left - heroRect.left) - pad - 2;
+        if (ptx > r.left - pad && ptx < r.right  + pad &&
+            pty > r.top  - pad && pty < r.bottom + pad) {
+          // Distances to each edge
+          var dL = Math.abs(ptx - (r.left  - pad));
+          var dR = Math.abs(ptx - (r.right + pad));
+          var dT = Math.abs(pty - (r.top   - pad));
+          var dB = Math.abs(pty - (r.bottom + pad));
+          var minD = Math.min(dL, dR, dT, dB);
+          var bounce = 0.7 + Math.random() * 0.25;
+          if (minD === dL) {
+            tk.vx = -Math.abs(tk.vx) * bounce - 0.5;
+            tk.x  = (r.left - heroRect.left) - pad - 2;
+          } else if (minD === dR) {
+            tk.vx =  Math.abs(tk.vx) * bounce + 0.5;
+            tk.x  = (r.right - heroRect.left) + pad + 2;
+          } else if (minD === dT) {
+            tk.vy = -Math.abs(tk.vy) * bounce - 0.5;
+            tk.y  = (r.top - heroRect.top) - pad - 2;
           } else {
-            tk.vx =  Math.abs(tk.vx) * (0.7 + Math.random()*0.2);
-            tk.x  = (pr.right - heroRect.left) + pad + 2;
+            tk.vy =  Math.abs(tk.vy) * bounce + 0.5;
+            tk.y  = (r.bottom - heroRect.top) + pad + 2;
           }
-          tk.vy *= (0.75 + Math.random()*0.2);
         }
       }
+
+      // Bounce off hero title ("IT that just works.")
+      bounceOffRect(heroTitleEl);
+
+      // Bounce off promise panel
+      bounceOffRect(promisePanelEl);
 
       // Speed cap
       var spd = Math.sqrt(tk.vx*tk.vx + tk.vy*tk.vy);
