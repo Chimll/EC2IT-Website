@@ -961,8 +961,8 @@
       // Random horizontal start, weighted toward centre so it's visible
       tk.x   = heroW * 0.15 + Math.random() * heroW * 0.55;
       tk.y   = -55;
-      tk.vx  = (Math.random() - 0.5) * 4.0;   // random sideways drift
-      tk.vy  = 1.0 + Math.random() * 1.2;      // downward
+      tk.vx  = (Math.random() - 0.5) * 2.0;   // slight sideways drift
+      tk.vy  = 2.0 + Math.random() * 1.5;      // downward with purpose
       tk.active = true;
       tk.caught = false;
       ticketEl.style.left      = tk.x + 'px';
@@ -983,24 +983,24 @@
       var heroH    = heroEl.offsetHeight;
       var heroRect = heroEl.getBoundingClientRect();
 
-      // Gravity + air drag
-      tk.vy += 0.14;
-      tk.vx *= 0.994;
+      // Gravity (heavier) + air drag
+      tk.vy += 0.28;
+      tk.vx *= 0.985;
 
-      // Mouse repulsion — bounces away from cursor (stronger)
+      // Mouse repulsion — deflects but doesn't stop the fall
       if (mouseHX > -900) {
         var mdx = tk.x - mouseHX, mdy = tk.y - mouseHY;
         var md  = Math.sqrt(mdx*mdx + mdy*mdy);
-        if (md < 110 && md > 1) {
-          var mf = (110 - md) / 110 * 1.4;
+        if (md < 90 && md > 1) {
+          var mf = (90 - md) / 90 * 0.8;
           tk.vx += (mdx/md) * mf;
-          tk.vy += (mdy/md) * mf;
+          tk.vy += (mdy/md) * mf * 0.5;  // less vertical push so it keeps falling
         }
       }
 
-      // Hero left/right wall bounces
-      if (tk.x < 12) { tk.vx =  Math.abs(tk.vx) * (0.65 + Math.random()*0.2); tk.x = 12; }
-      if (tk.x > heroW - 12) { tk.vx = -Math.abs(tk.vx) * (0.65 + Math.random()*0.2); tk.x = heroW - 12; }
+      // Hero left/right wall bounces (small deflection)
+      if (tk.x < 12) { tk.vx =  Math.abs(tk.vx) * (0.3 + Math.random()*0.15); tk.x = 12; }
+      if (tk.x > heroW - 12) { tk.vx = -Math.abs(tk.vx) * (0.3 + Math.random()*0.15); tk.x = heroW - 12; }
 
       // ── Helper: AABB bounce off a DOM element ──
       function bounceOffRect(el) {
@@ -1017,18 +1017,18 @@
           var dT = Math.abs(pty - (r.top   - pad));
           var dB = Math.abs(pty - (r.bottom + pad));
           var minD = Math.min(dL, dR, dT, dB);
-          var bounce = 0.7 + Math.random() * 0.25;
+          var bounce = 0.35 + Math.random() * 0.15;  // small bounces
           if (minD === dL) {
-            tk.vx = -Math.abs(tk.vx) * bounce - 0.5;
+            tk.vx = -Math.abs(tk.vx) * bounce - 0.3;
             tk.x  = (r.left - heroRect.left) - pad - 2;
           } else if (minD === dR) {
-            tk.vx =  Math.abs(tk.vx) * bounce + 0.5;
+            tk.vx =  Math.abs(tk.vx) * bounce + 0.3;
             tk.x  = (r.right - heroRect.left) + pad + 2;
           } else if (minD === dT) {
-            tk.vy = -Math.abs(tk.vy) * bounce - 0.5;
+            tk.vy = -Math.abs(tk.vy) * bounce;
             tk.y  = (r.top - heroRect.top) - pad - 2;
           } else {
-            tk.vy =  Math.abs(tk.vy) * bounce + 0.5;
+            tk.vy =  Math.abs(tk.vy) * bounce + 0.3;
             tk.y  = (r.bottom - heroRect.top) + pad + 2;
           }
         }
@@ -1090,31 +1090,81 @@
     }
 
     /* Main animation loop */
+    var ambCenterOffset = ambW * 0.45;  // catch zone roughly center-front of ambulance
+    var chaseActive = false;
+
     function tick() {
       var heroW = (wrapper.parentElement || document.body).offsetWidth;
       var endX  = heroW + ambW + 30;
 
-      // Accelerate once alert fires
-      speed = (phase === 'fast') ? Math.min(speed + 0.22, FAST_V) : SLOW_V;
-
-      x += speed;
-
       // Run ticket physics every frame
       ticketTick();
 
-      // Cycle reset
-      if (x > endX) {
-        x         = -(ambW + 30);
-        speed     = SLOW_V;
-        alertDone = false;
-        if (alertTimer) { clearTimeout(alertTimer); alertTimer = null; }
-        // Hide any lingering ticket
-        if (ticketEl) { ticketEl.style.display = 'none'; }
-        tk.active = false;
-        sharedTicketX = -999; sharedTicketY = -999;
-        setPhase('slow');
-        // Spawn next ticket after a short pause
-        setTimeout(spawnTicket, 600);
+      if (tk.active && !tk.caught) {
+        // ── Ambulance chases the ticket ──
+        // Target: align ambulance catch zone under the ticket's X
+        var targetX = tk.x - ambCenterOffset;
+        var diff    = targetX - x;
+
+        if (!chaseActive) {
+          // Cruise slowly until ticket is in lower third of hero
+          if (tk.y > heroEl.offsetHeight * 0.4) {
+            chaseActive = true;
+            triggerAlert();
+          } else {
+            // Gentle patrol — drift toward ticket loosely
+            speed = SLOW_V;
+            if (diff > 20) speed = SLOW_V;
+            else if (diff < -20) speed = -SLOW_V * 0.6;
+            x += speed;
+          }
+        }
+
+        if (chaseActive) {
+          // Accelerate toward ticket — can reverse direction
+          var accel = 0.35;
+          if (diff > 5) {
+            speed = Math.min(speed + accel, FAST_V);
+          } else if (diff < -5) {
+            speed = Math.max(speed - accel, -FAST_V * 0.7);
+          } else {
+            // Close enough — match ticket drift
+            speed *= 0.85;
+            speed += tk.vx * 0.15;
+          }
+          x += speed;
+        }
+      } else if (tk.caught || (!tk.active && alertDone)) {
+        // ── After catch: speed off screen ──
+        speed = Math.min(speed + 0.3, FAST_V);
+        x += Math.abs(speed);
+
+        // Cycle reset when off screen
+        if (x > endX) {
+          x         = -(ambW + 30);
+          speed     = SLOW_V;
+          alertDone = false;
+          chaseActive = false;
+          if (alertTimer) { clearTimeout(alertTimer); alertTimer = null; }
+          if (ticketEl) { ticketEl.style.display = 'none'; }
+          tk.active = false;
+          sharedTicketX = -999; sharedTicketY = -999;
+          setPhase('slow');
+          setTimeout(spawnTicket, 600);
+        }
+      } else {
+        // ── No ticket: patrol slowly ──
+        speed = SLOW_V;
+        x += speed;
+        if (x > endX) {
+          x = -(ambW + 30);
+        }
+      }
+
+      // Keep ambulance on screen during chase
+      if (tk.active) {
+        if (x < -(ambW * 0.5)) x = -(ambW * 0.5);
+        if (x > heroW - ambW * 0.5) x = heroW - ambW * 0.5;
       }
 
       vehicle.style.transform = 'translateX(' + x + 'px)';
