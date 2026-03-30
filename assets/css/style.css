@@ -465,13 +465,7 @@ h2 em { font-style: normal; color: var(--accent); }
   /* JS sets left/top; this keeps the origin at visual centre */
   transform: translate(-50%, -50%);
   letter-spacing: 0.3px;
-  will-change: left, top;
-  /* gentle float wobble while airborne */
-  animation: atk-wobble 1.8s ease-in-out infinite;
-}
-@keyframes atk-wobble {
-  0%, 100% { rotate: -3deg; }
-  50%       { rotate:  3deg; }
+  will-change: left, top, transform;
 }
 /* Cloud icon — solid circle with '!' */
 .atk-icon {

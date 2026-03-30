@@ -896,9 +896,9 @@
 
     var heroTitleEl    = document.querySelector('#hero h1');
     var promisePanelEl = document.querySelector('.promise-panel');
-    var heroEyebrowEl  = document.querySelector('#hero .hero-eyebrow');
-    var heroParagraph  = document.querySelector('#hero .hero-p');
-    var heroActionsEl  = document.querySelector('#hero .hero-actions');
+    // Collide with individual visible elements, not wrapper divs
+    var heroBtnDark   = document.querySelector('#hero .btn-dark');
+    var heroBtnLink   = document.querySelector('#hero .btn-link');
 
     /* ── Ambulance state ── */
     var ambW      = 320;
@@ -911,7 +911,7 @@
     var alertTimer = null;
 
     /* ── Ticket physics state ── */
-    var tk = { x: 0, y: -60, vx: 0, vy: 0, active: false, caught: false };
+    var tk = { x: 0, y: -60, vx: 0, vy: 0, rot: 0, vrot: 0, active: false, caught: false };
     var mouseHX = -999, mouseHY = -999;
 
     /* Track mouse in hero-relative coords for ticket repulsion */
@@ -964,8 +964,10 @@
       // Random horizontal start, weighted toward centre so it's visible
       tk.x   = heroW * 0.15 + Math.random() * heroW * 0.55;
       tk.y   = -55;
-      tk.vx  = (Math.random() - 0.5) * 2.0;   // slight sideways drift
-      tk.vy  = 2.0 + Math.random() * 1.5;      // downward with purpose
+      tk.vx   = (Math.random() - 0.5) * 2.0;   // slight sideways drift
+      tk.vy   = 2.0 + Math.random() * 1.5;     // downward with purpose
+      tk.rot  = (Math.random() - 0.5) * 10;    // slight initial tilt
+      tk.vrot = 0;
       tk.active = true;
       tk.caught = false;
       ticketEl.style.left      = tk.x + 'px';
@@ -1005,15 +1007,15 @@
       if (tk.x < 12) { tk.vx =  Math.abs(tk.vx) * (0.3 + Math.random()*0.15); tk.x = 12; }
       if (tk.x > heroW - 12) { tk.vx = -Math.abs(tk.vx) * (0.3 + Math.random()*0.15); tk.x = heroW - 12; }
 
-      // ── Helper: water-flow collision off a DOM element ──
-      // Instead of bouncing straight back, the ticket slides off
-      // toward the nearest edge — like water flowing over a surface.
+      // ── Helper: water-flow deflection off a DOM element ──
+      // Ticket slides off surfaces toward the nearest edge, like water.
+      // Collision also imparts angular spin based on where it hits.
       function deflectOffRect(el) {
         if (!el) return;
         var r   = el.getBoundingClientRect();
         var ptx = tk.x + heroRect.left;
         var pty = tk.y + heroRect.top;
-        var pad = 10;
+        var pad = 8;
         if (ptx > r.left - pad && ptx < r.right  + pad &&
             pty > r.top  - pad && pty < r.bottom + pad) {
 
@@ -1023,45 +1025,58 @@
           var dB = (r.bottom + pad) - pty;
           var minD = Math.min(dL, dR, dT, dB);
 
-          // Which horizontal edge is closer — determines slide direction
+          // Where on the surface did we hit? (0 = center, ±1 = edge)
           var cx = (r.left + r.right) / 2;
+          var halfW = (r.right - r.left) / 2;
           var slideDir = (ptx < cx) ? -1 : 1;
+          var edgeFrac = halfW > 0 ? Math.abs(ptx - cx) / halfW : 0;
+
+          // Spin: the further from center the hit, the more spin
+          var spinImpact = 0;
 
           if (minD === dT) {
-            // ── Landed on TOP: slide off to nearest side ──
+            // ── TOP: slide off toward nearest horizontal edge ──
             tk.y  = (r.top - heroRect.top) - pad - 1;
-            // Kill most vertical energy, convert to horizontal slide
-            tk.vy = -Math.abs(tk.vy) * 0.1;
-            // Slide toward nearest edge; stronger when closer to edge
-            var edgeFrac = Math.abs(ptx - cx) / ((r.right - r.left) / 2);
-            tk.vx += slideDir * (1.5 + edgeFrac * 2.5 + Math.abs(tk.vy) * 0.4);
-            // Surface friction
-            tk.vx *= 0.92;
+            tk.vy = -Math.abs(tk.vy) * 0.08;          // nearly kill vertical
+            tk.vx += slideDir * (0.8 + edgeFrac * 1.8); // slide sideways
+            tk.vx *= 0.94;                             // surface friction
+            spinImpact = slideDir * (2 + edgeFrac * 4);
           } else if (minD === dB) {
-            // ── Hit BOTTOM: deflect down + outward ──
+            // ── BOTTOM: deflect down + outward ──
             tk.y  = (r.bottom - heroRect.top) + pad + 1;
-            tk.vy = Math.abs(tk.vy) * 0.25 + 0.5;
-            tk.vx += slideDir * 1.2;
+            tk.vy = Math.abs(tk.vy) * 0.2 + 0.3;
+            tk.vx += slideDir * 0.6;
+            spinImpact = slideDir * (1.5 + edgeFrac * 3);
           } else if (minD === dL) {
-            // ── Hit LEFT side: deflect left + let gravity pull down ──
+            // ── LEFT side: deflect left, gravity pulls down ──
             tk.x  = (r.left - heroRect.left) - pad - 1;
-            tk.vx = -Math.abs(tk.vx) * 0.3 - 1.0;
-            tk.vy += 0.4;  // gravity assists downward flow
+            tk.vx = -Math.abs(tk.vx) * 0.25 - 0.6;
+            tk.vy += 0.3;
+            spinImpact = -(2 + Math.abs(tk.vy) * 0.8);
           } else {
-            // ── Hit RIGHT side: deflect right + let gravity pull down ──
+            // ── RIGHT side: deflect right, gravity pulls down ──
             tk.x  = (r.right - heroRect.left) + pad + 1;
-            tk.vx = Math.abs(tk.vx) * 0.3 + 1.0;
-            tk.vy += 0.4;
+            tk.vx = Math.abs(tk.vx) * 0.25 + 0.6;
+            tk.vy += 0.3;
+            spinImpact = (2 + Math.abs(tk.vy) * 0.8);
           }
+
+          // Apply angular spin from collision
+          tk.vrot += spinImpact;
         }
       }
 
-      // Deflect off all hero content elements
-      deflectOffRect(heroEyebrowEl);
+      // Deflect off visible hero elements only (not wrapper divs)
       deflectOffRect(heroTitleEl);
-      deflectOffRect(heroParagraph);
-      deflectOffRect(heroActionsEl);
+      deflectOffRect(heroBtnDark);
+      deflectOffRect(heroBtnLink);
       deflectOffRect(promisePanelEl);
+
+      // ── Rotation physics ──
+      // Air drag on rotation + natural spin from horizontal movement
+      tk.vrot += tk.vx * 0.15;       // horizontal motion creates spin
+      tk.vrot *= 0.96;               // angular drag
+      tk.rot  += tk.vrot;
 
       // Speed cap
       var spd = Math.sqrt(tk.vx*tk.vx + tk.vy*tk.vy);
@@ -1107,9 +1122,10 @@
       sharedTicketX = tk.x;
       sharedTicketY = tk.y;
 
-      // Update DOM
+      // Update DOM — position + rotation
       ticketEl.style.left = tk.x + 'px';
       ticketEl.style.top  = tk.y + 'px';
+      ticketEl.style.transform = 'translate(-50%, -50%) rotate(' + tk.rot + 'deg)';
     }
 
     /* Main animation loop */
@@ -1144,16 +1160,18 @@
         }
 
         if (chaseActive) {
-          // Accelerate toward ticket — can reverse direction
-          var accel = 0.35;
+          // Accelerate toward ticket — speed scales with distance
+          var absDiff = Math.abs(diff);
+          var accel = 0.35 + absDiff * 0.004;  // faster when further away
+          var maxSpd = Math.min(FAST_V + absDiff * 0.03, 22);  // higher top speed for big gaps
           if (diff > 5) {
-            speed = Math.min(speed + accel, FAST_V);
+            speed = Math.min(speed + accel, maxSpd);
           } else if (diff < -5) {
-            speed = Math.max(speed - accel, -FAST_V * 0.7);
+            speed = Math.max(speed - accel, -maxSpd * 0.8);
           } else {
             // Close enough — match ticket drift
             speed *= 0.85;
-            speed += tk.vx * 0.15;
+            speed += tk.vx * 0.2;
           }
           x += speed;
         }
