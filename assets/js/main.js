@@ -896,6 +896,9 @@
 
     var heroTitleEl    = document.querySelector('#hero h1');
     var promisePanelEl = document.querySelector('.promise-panel');
+    var heroEyebrowEl  = document.querySelector('#hero .hero-eyebrow');
+    var heroParagraph  = document.querySelector('#hero .hero-p');
+    var heroActionsEl  = document.querySelector('#hero .hero-actions');
 
     /* ── Ambulance state ── */
     var ambW      = 320;
@@ -1002,43 +1005,63 @@
       if (tk.x < 12) { tk.vx =  Math.abs(tk.vx) * (0.3 + Math.random()*0.15); tk.x = 12; }
       if (tk.x > heroW - 12) { tk.vx = -Math.abs(tk.vx) * (0.3 + Math.random()*0.15); tk.x = heroW - 12; }
 
-      // ── Helper: AABB bounce off a DOM element ──
-      function bounceOffRect(el) {
+      // ── Helper: water-flow collision off a DOM element ──
+      // Instead of bouncing straight back, the ticket slides off
+      // toward the nearest edge — like water flowing over a surface.
+      function deflectOffRect(el) {
         if (!el) return;
         var r   = el.getBoundingClientRect();
         var ptx = tk.x + heroRect.left;
         var pty = tk.y + heroRect.top;
-        var pad = 14;
+        var pad = 10;
         if (ptx > r.left - pad && ptx < r.right  + pad &&
             pty > r.top  - pad && pty < r.bottom + pad) {
-          // Distances to each edge
-          var dL = Math.abs(ptx - (r.left  - pad));
-          var dR = Math.abs(ptx - (r.right + pad));
-          var dT = Math.abs(pty - (r.top   - pad));
-          var dB = Math.abs(pty - (r.bottom + pad));
+
+          var dL = ptx - (r.left  - pad);
+          var dR = (r.right + pad) - ptx;
+          var dT = pty - (r.top   - pad);
+          var dB = (r.bottom + pad) - pty;
           var minD = Math.min(dL, dR, dT, dB);
-          var bounce = 0.35 + Math.random() * 0.15;  // small bounces
-          if (minD === dL) {
-            tk.vx = -Math.abs(tk.vx) * bounce - 0.3;
-            tk.x  = (r.left - heroRect.left) - pad - 2;
-          } else if (minD === dR) {
-            tk.vx =  Math.abs(tk.vx) * bounce + 0.3;
-            tk.x  = (r.right - heroRect.left) + pad + 2;
-          } else if (minD === dT) {
-            tk.vy = -Math.abs(tk.vy) * bounce;
-            tk.y  = (r.top - heroRect.top) - pad - 2;
+
+          // Which horizontal edge is closer — determines slide direction
+          var cx = (r.left + r.right) / 2;
+          var slideDir = (ptx < cx) ? -1 : 1;
+
+          if (minD === dT) {
+            // ── Landed on TOP: slide off to nearest side ──
+            tk.y  = (r.top - heroRect.top) - pad - 1;
+            // Kill most vertical energy, convert to horizontal slide
+            tk.vy = -Math.abs(tk.vy) * 0.1;
+            // Slide toward nearest edge; stronger when closer to edge
+            var edgeFrac = Math.abs(ptx - cx) / ((r.right - r.left) / 2);
+            tk.vx += slideDir * (1.5 + edgeFrac * 2.5 + Math.abs(tk.vy) * 0.4);
+            // Surface friction
+            tk.vx *= 0.92;
+          } else if (minD === dB) {
+            // ── Hit BOTTOM: deflect down + outward ──
+            tk.y  = (r.bottom - heroRect.top) + pad + 1;
+            tk.vy = Math.abs(tk.vy) * 0.25 + 0.5;
+            tk.vx += slideDir * 1.2;
+          } else if (minD === dL) {
+            // ── Hit LEFT side: deflect left + let gravity pull down ──
+            tk.x  = (r.left - heroRect.left) - pad - 1;
+            tk.vx = -Math.abs(tk.vx) * 0.3 - 1.0;
+            tk.vy += 0.4;  // gravity assists downward flow
           } else {
-            tk.vy =  Math.abs(tk.vy) * bounce + 0.3;
-            tk.y  = (r.bottom - heroRect.top) + pad + 2;
+            // ── Hit RIGHT side: deflect right + let gravity pull down ──
+            tk.x  = (r.right - heroRect.left) + pad + 1;
+            tk.vx = Math.abs(tk.vx) * 0.3 + 1.0;
+            tk.vy += 0.4;
           }
         }
       }
 
-      // Bounce off hero title ("IT that just works.")
-      bounceOffRect(heroTitleEl);
-
-      // Bounce off promise panel
-      bounceOffRect(promisePanelEl);
+      // Deflect off all hero content elements
+      deflectOffRect(heroEyebrowEl);
+      deflectOffRect(heroTitleEl);
+      deflectOffRect(heroParagraph);
+      deflectOffRect(heroActionsEl);
+      deflectOffRect(promisePanelEl);
 
       // Speed cap
       var spd = Math.sqrt(tk.vx*tk.vx + tk.vy*tk.vy);
