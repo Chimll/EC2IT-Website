@@ -1008,59 +1008,75 @@
         }
       }
 
-      // Hero left/right wall bounces (small deflection)
-      if (tk.x < 12) { tk.vx =  Math.abs(tk.vx) * (0.3 + Math.random()*0.15); tk.x = 12; }
-      if (tk.x > heroW - 12) { tk.vx = -Math.abs(tk.vx) * (0.3 + Math.random()*0.15); tk.x = heroW - 12; }
+      // ── Ticket dimensions (half-widths for rect collision) ──
+      var tkHW = ticketEl.offsetWidth  * 0.5;
+      var tkHH = ticketEl.offsetHeight * 0.5;
 
-      // ── Helper: rest-and-slide collision off a DOM element ──
-      // No bouncing. If ticket lands on top, it rests and gently slides
-      // toward the nearest edge. Side hits redirect downward.
+      // Hero left/right wall (account for ticket width)
+      if (tk.x - tkHW < 0) { tk.vx = Math.abs(tk.vx) * 0.3; tk.x = tkHW; }
+      if (tk.x + tkHW > heroW) { tk.vx = -Math.abs(tk.vx) * 0.3; tk.x = heroW - tkHW; }
+
+      // ── Rect-vs-rect collision: ticket rests and only slides off ──
+      // when its center of mass actually overhangs the surface edge.
+      // "resting" flag lets us stabilize rotation on surfaces.
+      var resting = false;
+
       function collideRect(el) {
         if (!el) return;
         var r   = el.getBoundingClientRect();
-        var ptx = tk.x + heroRect.left;
-        var pty = tk.y + heroRect.top;
-        var pad = 6;
-        if (ptx > r.left - pad && ptx < r.right  + pad &&
-            pty > r.top  - pad && pty < r.bottom + pad) {
+        // Ticket rect edges in screen coords
+        var tl = tk.x - tkHW + heroRect.left;
+        var tr = tk.x + tkHW + heroRect.left;
+        var tt = tk.y - tkHH + heroRect.top;
+        var tb = tk.y + tkHH + heroRect.top;
 
-          var dL = ptx - (r.left  - pad);
-          var dR = (r.right + pad) - ptx;
-          var dT = pty - (r.top   - pad);
-          var dB = (r.bottom + pad) - pty;
-          var minD = Math.min(dL, dR, dT, dB);
+        // AABB overlap test (rect vs rect)
+        if (tr < r.left || tl > r.right || tb < r.top || tt > r.bottom) return;
 
-          var cx = (r.left + r.right) / 2;
-          var halfW = (r.right - r.left) / 2;
-          var slideDir = (ptx < cx) ? -1 : 1;
-          var edgeFrac = halfW > 0 ? Math.abs(ptx - cx) / halfW : 0;
+        // Penetration depths from each side
+        var penL = tr - r.left;   // ticket overlaps from left
+        var penR = r.right - tl;  // ticket overlaps from right
+        var penT = tb - r.top;    // ticket overlaps from top
+        var penB = r.bottom - tt; // ticket overlaps from bottom
+        var minPen = Math.min(penL, penR, penT, penB);
 
-          if (minD === dT) {
-            // ── TOP: rest on surface, slide gently toward nearest edge ──
-            tk.y  = (r.top - heroRect.top) - pad;
-            tk.vy = 0;                                  // full stop, no bounce
-            tk.vx += slideDir * (0.15 + edgeFrac * 0.4); // gentle slide
-            tk.vx *= 0.93;                              // surface friction
-            tk.vrot += slideDir * (0.5 + edgeFrac * 1.5);
-          } else if (minD === dB) {
-            // ── BOTTOM: push past, continue falling ──
-            tk.y  = (r.bottom - heroRect.top) + pad;
-            tk.vy = Math.max(tk.vy, 0.5);               // ensure downward
-            tk.vx += slideDir * 0.3;
-            tk.vrot += slideDir * 1.0;
-          } else if (minD === dL) {
-            // ── LEFT side: redirect down along face ──
-            tk.x  = (r.left - heroRect.left) - pad;
-            tk.vx = Math.min(tk.vx, -0.3);              // push left gently
-            tk.vy = Math.max(tk.vy, 0.5);               // keep falling
-            tk.vrot -= 1.5;
-          } else {
-            // ── RIGHT side: redirect down along face ──
-            tk.x  = (r.right - heroRect.left) + pad;
-            tk.vx = Math.max(tk.vx, 0.3);               // push right gently
-            tk.vy = Math.max(tk.vy, 0.5);               // keep falling
-            tk.vrot += 1.5;
+        if (minPen === penT) {
+          // ── Landed on TOP ──
+          tk.y = (r.top - heroRect.top) - tkHH;
+          tk.vy = 0;
+          resting = true;
+
+          // Only slide once ticket CENTER passes the surface edge
+          var surfL = r.left  - heroRect.left;
+          var surfR = r.right - heroRect.left;
+          if (tk.x < surfL) {
+            // Center overhangs left — tip off
+            tk.vx -= 0.12;
+          } else if (tk.x > surfR) {
+            // Center overhangs right — tip off
+            tk.vx += 0.12;
           }
+          // Surface friction
+          tk.vx *= 0.90;
+
+        } else if (minPen === penB) {
+          // ── Hit BOTTOM ──
+          tk.y = (r.bottom - heroRect.top) + tkHH;
+          tk.vy = Math.max(tk.vy, 0.5);
+
+        } else if (minPen === penL) {
+          // ── Hit LEFT side ──
+          tk.x = (r.left - heroRect.left) - tkHW;
+          tk.vx = Math.min(tk.vx, -0.3);
+          tk.vy = Math.max(tk.vy, 0.5);
+          tk.vrot -= 1.0;
+
+        } else {
+          // ── Hit RIGHT side ──
+          tk.x = (r.right - heroRect.left) + tkHW;
+          tk.vx = Math.max(tk.vx, 0.3);
+          tk.vy = Math.max(tk.vy, 0.5);
+          tk.vrot += 1.0;
         }
       }
 
@@ -1070,9 +1086,16 @@
       }
 
       // ── Rotation physics ──
-      tk.vrot += tk.vx * 0.12;       // horizontal motion creates spin
-      tk.vrot *= 0.94;               // angular drag
-      tk.rot  += tk.vrot;
+      if (resting) {
+        // On a surface: stabilize rotation toward flat (0°)
+        tk.vrot *= 0.7;
+        tk.rot  *= 0.85;   // ease back to 0
+      } else {
+        // Airborne: spin from horizontal drift
+        tk.vrot += tk.vx * 0.12;
+        tk.vrot *= 0.94;
+      }
+      tk.rot += tk.vrot;
 
       // Speed cap
       var spd = Math.sqrt(tk.vx*tk.vx + tk.vy*tk.vy);
