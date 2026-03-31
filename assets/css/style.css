@@ -488,6 +488,40 @@ h2 em { font-style: normal; color: var(--accent); }
   color: #4d8aff;
 }
 
+/* ── Stickman helper ─────────────────────────── */
+#kick-stickman {
+  position: absolute;
+  display: none;
+  z-index: 6;
+  pointer-events: none;
+  color: var(--accent, #0057ff);
+  will-change: left, top, transform;
+  transform: translate(-50%, -100%);   /* anchor at feet */
+}
+.stk-svg { width: 28px; height: 42px; }
+
+/* Kick animation */
+@keyframes stk-appear {
+  0%   { opacity: 0; transform: translate(-50%, -100%) scale(0.3); }
+  50%  { opacity: 1; transform: translate(-50%, -100%) scale(1.1); }
+  100% { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+}
+@keyframes stk-kick {
+  0%   { transform: rotate(0deg); }
+  40%  { transform: rotate(-45deg); }
+  60%  { transform: rotate(30deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes stk-vanish {
+  0%   { opacity: 1; transform: translate(-50%, -100%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -100%) translateY(-20px) scale(0.3); }
+}
+#kick-stickman.stk-enter { animation: stk-appear 0.3s ease-out forwards; }
+#kick-stickman.stk-active .stk-kick-leg { transform-origin: 20px 36px; animation: stk-kick 0.35s ease-in-out forwards; }
+#kick-stickman.stk-leave { animation: stk-vanish 0.3s ease-in forwards; }
+
+[data-theme="dark"] #kick-stickman { color: #4d8aff; }
+
 /* Smoke phase control — JS sets amb-slow/alert/fast class on .hero-ambulance */
 .amb-smoke-heavy { opacity: 0; transition: opacity 0.35s ease; }
 .amb-smoke-light { opacity: 1; transition: opacity 0.35s ease; }

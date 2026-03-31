@@ -199,6 +199,23 @@
       <span class="atk-text">New Ticket</span>
     </div>
 
+    <!-- Stickman helper — appears when ticket is stuck and kicks it free -->
+    <div id="kick-stickman" aria-hidden="true">
+      <svg class="stk-svg" viewBox="0 0 40 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Head -->
+        <circle cx="20" cy="8" r="6" stroke="currentColor" stroke-width="2.5"/>
+        <!-- Body -->
+        <line x1="20" y1="14" x2="20" y2="36" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Arms -->
+        <line x1="20" y1="22" x2="8" y2="28" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="20" y1="22" x2="32" y2="20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Standing leg -->
+        <line x1="20" y1="36" x2="12" y2="52" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+        <!-- Kicking leg — animated -->
+        <line class="stk-kick-leg" x1="20" y1="36" x2="30" y2="50" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+
 
     <!-- IT Ambulance — Mercedes Sprinter profile: tall body, stepped-down cab -->
     <div class="hero-ambulance amb-slow" aria-hidden="true">
