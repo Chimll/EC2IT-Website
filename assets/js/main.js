@@ -919,6 +919,79 @@
     var tk = { x: 0, y: -60, vx: 0, vy: 0, rot: 0, vrot: 0, active: false, caught: false };
     var mouseHX = -999, mouseHY = -999;
 
+    /* ── Stuck detection + stickman kick ── */
+    var stickmanEl  = document.getElementById('kick-stickman');
+    var stuckFrames = 0;           // how many frames the ticket hasn't moved
+    var prevTkX     = -999;
+    var prevTkY     = -999;
+    var STUCK_THRESHOLD = 90;      // ~1.5 seconds at 60fps
+    var kickInProgress  = false;
+
+    function spawnStickman() {
+      if (!stickmanEl || kickInProgress) return;
+      kickInProgress = true;
+
+      // Figure out which direction the ticket should be kicked
+      // Find the nearest edge it can fall off
+      var kickDirX = 0;
+      var kickDirY = 1;  // default: kick downward
+
+      // Check which horizontal edge of the surface the ticket is closer to
+      // by looking at nearby hitbox elements
+      for (var si = 0; si < hitboxEls.length; si++) {
+        var sr = hitboxEls[si].getBoundingClientRect();
+        var heroRect = heroEl.getBoundingClientRect();
+        var surfL = sr.left  - heroRect.left;
+        var surfR = sr.right - heroRect.left;
+        var surfT = sr.top   - heroRect.top;
+        // Is the ticket resting on top of this element?
+        var tkBottom = tk.y + (ticketEl ? ticketEl.offsetHeight * 0.5 : 15);
+        if (Math.abs(tkBottom - surfT) < 12 && tk.x > surfL - 20 && tk.x < surfR + 20) {
+          // Ticket is on this surface — kick toward nearest horizontal edge
+          kickDirX = (tk.x - (surfL + surfR) / 2) < 0 ? -1 : 1;
+          kickDirY = 0.3;
+          break;
+        }
+      }
+
+      // Position stickman next to ticket, on the opposite side of kick direction
+      var stkX = tk.x - kickDirX * 35;
+      var stkY = tk.y + (ticketEl ? ticketEl.offsetHeight * 0.5 : 15);
+
+      stickmanEl.style.left = stkX + 'px';
+      stickmanEl.style.top  = stkY + 'px';
+      // Flip stickman to face the kick direction
+      stickmanEl.style.transform = 'translate(-50%, -100%) scaleX(' + (kickDirX >= 0 ? 1 : -1) + ')';
+      stickmanEl.style.display = 'block';
+      stickmanEl.className = 'stk-enter';
+
+      // Phase 2: kick animation after appearing
+      setTimeout(function() {
+        if (!stickmanEl) return;
+        stickmanEl.className = 'stk-active';
+
+        // Apply kick force to ticket
+        tk.vx += kickDirX * 4.5;
+        tk.vy += kickDirY * 2.5;
+        tk.vrot += kickDirX * 8;
+        stuckFrames = 0;
+      }, 320);
+
+      // Phase 3: vanish
+      setTimeout(function() {
+        if (!stickmanEl) return;
+        stickmanEl.className = 'stk-leave';
+      }, 700);
+
+      // Phase 4: hide and reset
+      setTimeout(function() {
+        if (!stickmanEl) return;
+        stickmanEl.style.display = 'none';
+        stickmanEl.className = '';
+        kickInProgress = false;
+      }, 1020);
+    }
+
     /* Track mouse in hero-relative coords for ticket repulsion */
     heroEl.addEventListener('mousemove', function(e) {
       var r = heroEl.getBoundingClientRect();
@@ -975,6 +1048,9 @@
       tk.vrot = 0;
       tk.active = true;
       tk.caught = false;
+      stuckFrames = 0;
+      prevTkX = -999;
+      prevTkY = -999;
       ticketEl.style.left      = tk.x + 'px';
       ticketEl.style.top       = tk.y + 'px';
       ticketEl.style.display   = 'flex';
@@ -1136,6 +1212,19 @@
         triggerAlert();  // ambulance speeds off anyway
         return;
       }
+
+      // ── Stuck detection ──
+      var moved = Math.abs(tk.x - prevTkX) + Math.abs(tk.y - prevTkY);
+      if (moved < 0.5) {
+        stuckFrames++;
+        if (stuckFrames >= STUCK_THRESHOLD && !kickInProgress) {
+          spawnStickman();
+        }
+      } else {
+        stuckFrames = 0;
+      }
+      prevTkX = tk.x;
+      prevTkY = tk.y;
 
       // Share position with network map
       sharedTicketX = tk.x;
